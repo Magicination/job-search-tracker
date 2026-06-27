@@ -1,0 +1,25 @@
+# Зависимости
+node_modules/
+.npm/
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+
+# Переменные окружения — никогда не коммитим реальные ключи
+.env
+.env.local
+.env*.local
+
+# Системные/IDE файлы
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Vercel
+.vercel

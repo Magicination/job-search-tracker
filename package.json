@@ -1,0 +1,19 @@
+{
+  "name": "job-search-tracker",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "node scripts/check-env.js && npm run dev --workspace=web",
+    "build": "npm run build --workspace=web",
+    "setup": "node scripts/check-env.js",
+    "db:link": "supabase link",
+    "db:push": "supabase db push",
+    "db:new": "supabase migration new"
+  },
+  "devDependencies": {
+    "supabase": "^2.107.0"
+  }
+}

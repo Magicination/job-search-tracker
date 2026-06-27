@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #14181f;
+  --panel: #1c222b;
+  --panel-2: #232a35;
+  --border: #2e3744;
+  --border-soft: #262e3a;
+  --text: #e7eaef;
+  --text-dim: #9aa5b3;
+  --text-faint: #677084;
+
+  --accent-amber: #e8a33d;
+  --accent-teal: #3fb88f;
+  --accent-blue: #5b8fd6;
+  --accent-coral: #dd6b4f;
+}
+
+/* Светлая тема — переопределяет те же переменные, весь UI построен на них
+   через Tailwind-классы (bg-panel, text-dim и т.д.), поэтому переключение
+   происходит одной заменой класса на <html>, без правок в компонентах. */
+.light {
+  --bg: #f7f8fa;
+  --panel: #ffffff;
+  --panel-2: #f0f2f5;
+  --border: #d8dce3;
+  --border-soft: #e4e7ec;
+  --text: #1c222b;
+  --text-dim: #5b6472;
+  --text-faint: #8d96a3;
+
+  --accent-amber: #c97f1f;
+  --accent-teal: #2a9670;
+  --accent-blue: #3f6fb8;
+  --accent-coral: #c8503a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-border: var(--border);
+  --color-border-soft: var(--border-soft);
+  --color-text: var(--text);
+  --color-text-dim: var(--text-dim);
+  --color-text-faint: var(--text-faint);
+
+  --color-accent-amber: var(--accent-amber);
+  --color-accent-teal: var(--accent-teal);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-coral: var(--accent-coral);
+
+  --font-sans: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+html.light {
+  color-scheme: light;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Видимый keyboard focus — доступность по умолчанию во всём приложении */
+:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-color: var(--border) var(--panel);
+}
