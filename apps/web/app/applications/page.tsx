@@ -7,6 +7,7 @@ import { useApplicationFilters } from '../../lib/hooks/useApplicationFilters';
 import { ApplicationCard } from '../../components/ApplicationCard';
 import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
 import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
+import { CreateFromUrlBar } from '../../components/CreateFromUrlBar';
 import { SkeletonList } from '../../components/Skeleton';
 
 export default function ApplicationsPage() {
@@ -14,6 +15,7 @@ export default function ApplicationsPage() {
     applications,
     loading,
     addApplication,
+    addApplicationFromUrl,
     updateField,
     updateStatus,
     updateAppliedDate,
@@ -42,6 +44,8 @@ export default function ApplicationsPage() {
           + Добавить отклик
         </button>
       </div>
+
+      <CreateFromUrlBar onCreate={addApplicationFromUrl} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <DocumentVersionsPanel

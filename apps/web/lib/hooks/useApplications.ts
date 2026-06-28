@@ -48,47 +48,99 @@ export function useApplications() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const addApplication = useCallback(async () => {
-    if (!user) return;
-    const now = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('applications')
-      .insert({
+  /**
+   * Общая логика создания отклика + первой записи в историю статусов.
+   * Используется и пустой кнопкой "Добавить отклик", и автозаполнением по
+   * ссылке — чтобы не дублировать вставку в application_status_history.
+   */
+  const insertApplicationWithHistory = useCallback(
+    async (fields: Partial<Application>) => {
+      if (!user) return null;
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('applications')
+        .insert({
+          user_id: user.id,
+          company: '',
+          role: '',
+          source: '',
+          applied_date: getTodayLocal(),
+          applied_at: now,
+          status: 'applied',
+          note: '',
+          salary: '',
+          experience_required: '',
+          ...fields,
+        })
+        .select()
+        .single();
+
+      if (error || !data) {
+        showError('Не удалось создать отклик. Попробуйте ещё раз.');
+        return null;
+      }
+
+      setApplications((prev) => [data as Application, ...prev]);
+      const { error: historyError } = await supabase.from('application_status_history').insert({
         user_id: user.id,
-        company: '',
-        role: '',
-        source: '',
-        applied_date: getTodayLocal(),
-        applied_at: now,
-        status: 'applied',
-        note: '',
-        salary: '',
-        experience_required: '',
-      })
-      .select()
-      .single();
+        application_id: (data as Application).id,
+        from_status: null,
+        to_status: 'applied',
+        changed_at: now,
+      });
+      if (historyError) {
+        showError('Отклик создан, но не сохранился в истории для аналитики.');
+      }
 
-    if (error || !data) {
-      showError('Не удалось создать отклик. Попробуйте ещё раз.');
-      return;
-    }
+      return data as Application;
+    },
+    [user, showError]
+  );
 
-    setApplications((prev) => [data as Application, ...prev]);
-    // Первая запись в истории статусов — момент создания отклика.
-    // from_status = null означает "начальное состояние", не реальный переход.
-    const { error: historyError } = await supabase.from('application_status_history').insert({
-      user_id: user.id,
-      application_id: (data as Application).id,
-      from_status: null,
-      to_status: 'applied',
-      changed_at: now,
-    });
-    if (historyError) {
-      // Сам отклик уже создан и виден пользователю — это не критично для UX,
-      // но без записи в истории аналитика недосчитает этот отклик в воронке.
-      showError('Отклик создан, но не сохранился в истории для аналитики.');
-    }
-  }, [user, showError]);
+  const addApplication = useCallback(async () => {
+    await insertApplicationWithHistory({});
+  }, [insertApplicationWithHistory]);
+
+  /**
+   * Создаёт отклик, предзаполненный данными, разобранными по ссылке на
+   * вакансию (сейчас только hh.ru, см. app/api/parse-vacancy/route.ts).
+   * Источник ('hh.ru') проставляется автоматически — раз ссылка именно
+   * с hh.ru, нет смысла спрашивать пользователя.
+   */
+  const addApplicationFromUrl = useCallback(
+    async (url: string): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const response = await fetch('/api/parse-vacancy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+
+        const parsed = await response.json();
+
+        if (!response.ok) {
+          return { success: false, error: parsed.error ?? 'Не удалось разобрать ссылку.' };
+        }
+
+        const created = await insertApplicationWithHistory({
+          company: parsed.company ?? '',
+          role: parsed.role ?? '',
+          salary: parsed.salary ?? '',
+          experience_required: parsed.experienceRequired ?? '',
+          source: 'hh.ru',
+        });
+
+        if (!created) {
+          return { success: false, error: 'Данные разобраны, но не удалось сохранить отклик.' };
+        }
+
+        return { success: true };
+      } catch {
+        return { success: false, error: 'Не удалось связаться с сервером. Проверьте соединение.' };
+      }
+    },
+    [insertApplicationWithHistory]
+  );
 
   /** Немедленное обновление в UI + debounce ~500мс перед записью в БД (для текстовых полей). */
   const updateField = useCallback(
@@ -297,6 +349,7 @@ export function useApplications() {
     applications,
     loading,
     addApplication,
+    addApplicationFromUrl,
     updateField,
     updateStatus,
     updateAppliedDate,
