@@ -230,3 +230,32 @@ export const PM_BOOKS: string[] = [
   '«Cracking the PM Interview» — Гейл Лакман Макдауэлл',
   '«Спроси маму» — Роб Фитцпатрик',
 ];
+
+// Стандартные источники вакансий — для select в UI откликов. Пользователь
+// может выбрать один из них или ввести своё значение (поле остаётся
+// свободным текстом в БД, этот список — только подсказка для UI).
+export const STANDARD_APPLICATION_SOURCES: string[] = [
+  'hh.ru',
+  'LinkedIn',
+  'Хабр Карьера',
+  'getmatch',
+  'Wellfound',
+  'RemoteOK',
+  'We Work Remotely',
+  'Рекомендация',
+  'Прямой контакт с компанией',
+];
+
+// Категории расшаренных ресурсов, которые добавляют сами пользователи —
+// используются и для select при добавлении, и для группировки в UI.
+export const SHARED_RESOURCE_CATEGORY_LABELS: Record<
+  'job_boards' | 'internships' | 'sql_analytics' | 'english' | 'interview_prep' | 'other',
+  string
+> = {
+  job_boards: 'Агрегаторы вакансий',
+  internships: 'Стажировки',
+  sql_analytics: 'SQL и аналитика',
+  english: 'Английский',
+  interview_prep: 'Подготовка к интервью',
+  other: 'Другое',
+};

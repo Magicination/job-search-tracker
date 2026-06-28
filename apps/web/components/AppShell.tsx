@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     // ссылке из письма — иначе форма установки пароля никогда не успеет
     // показаться.
     if (user && !requiresPasswordSetup && (pathname === '/login' || pathname === '/')) {
-      router.replace('/today');
+      router.replace('/applications');
     }
   }, [user, loading, requiresPasswordSetup, pathname, router]);
 

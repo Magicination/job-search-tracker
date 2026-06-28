@@ -5,14 +5,16 @@ import {
   calculateFunnelFromHistory,
   calculateAverageDaysToFirstResponse,
   calculateConversionByDayOfWeek,
-  calculateConversionByTimeOfDay,
+  calculateConversionByHour,
   calculateConversionBySource,
   calculateConversionByResumeVersion,
+  calculateConversionByCoverLetterVersion,
   type GroupedConversion,
   type BadgeVariant,
 } from '@job-search-tracker/shared';
 import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics';
 import { SkeletonCard } from '../../components/Skeleton';
+import { HourlyChart } from '../../components/HourlyChart';
 
 // Те же CSS-переменные, что и в Badge.tsx — меняются вместе с темой
 // (.light в globals.css), в отличие от фиксированного hex.
@@ -94,7 +96,7 @@ function GroupedTable({
 }
 
 export default function AnalyticsPage() {
-  const { applications, history, resumeVersions, loading } = useApplicationAnalytics();
+  const { applications, history, resumeVersions, coverLetterVersions, loading } = useApplicationAnalytics();
 
   if (loading) {
     return (
@@ -126,11 +128,14 @@ export default function AnalyticsPage() {
   const historyFunnel = calculateFunnelFromHistory(history);
   const avgDays = calculateAverageDaysToFirstResponse(history);
   const byDayOfWeek = calculateConversionByDayOfWeek(applications, history);
-  const byTimeOfDay = calculateConversionByTimeOfDay(applications, history);
+  const byHour = calculateConversionByHour(applications, history);
   const bySource = calculateConversionBySource(applications, history);
 
-  const versionNameById = new Map(resumeVersions.map((v) => [v.id, v.name]));
-  const byResumeVersion = calculateConversionByResumeVersion(applications, history, versionNameById);
+  const resumeNameById = new Map(resumeVersions.map((v) => [v.id, v.name]));
+  const byResumeVersion = calculateConversionByResumeVersion(applications, history, resumeNameById);
+
+  const coverLetterNameById = new Map(coverLetterVersions.map((v) => [v.id, v.name]));
+  const byCoverLetterVersion = calculateConversionByCoverLetterVersion(applications, history, coverLetterNameById);
 
   const pct = (count: number) =>
     historyFunnel.applied ? Math.round((count / historyFunnel.applied) * 100) : 0;
@@ -182,15 +187,19 @@ export default function AnalyticsPage() {
         </p>
       </div>
 
+      <div className="rounded-lg border border-border-soft bg-panel p-4">
+        <h2 className="mb-3 text-sm font-medium text-text">По часу отклика (00–24)</h2>
+        <HourlyChart data={byHour} />
+        <p className="mt-2 text-xs text-text-faint">
+          Высота столбика — сколько откликов отправлено в этот час, цвет —
+          доля из них, дошедших до интервью или дальше.
+        </p>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
         <GroupedTable
           title="По дню недели отклика"
           groups={byDayOfWeek}
-          emptyHint="Нет данных — у старых откликов не сохранено точное время отправки."
-        />
-        <GroupedTable
-          title="По времени суток отклика"
-          groups={byTimeOfDay}
           emptyHint="Нет данных — у старых откликов не сохранено точное время отправки."
         />
         <GroupedTable
@@ -202,6 +211,11 @@ export default function AnalyticsPage() {
           title="По версии резюме"
           groups={byResumeVersion}
           emptyHint="Привяжите отклики к версии резюме на странице «Отклики», чтобы сравнить их эффективность."
+        />
+        <GroupedTable
+          title="По версии сопроводительного"
+          groups={byCoverLetterVersion}
+          emptyHint="Привяжите отклики к версии сопроводительного письма на странице «Отклики»."
         />
       </div>
     </div>

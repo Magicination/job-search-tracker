@@ -1,51 +1,36 @@
 'use client';
 
-// Хук агрегирует данные для трёх счётчиков шапки (streak, задачи за неделю,
-// всего откликов) и поддерживает их актуальность через realtime-подписки
-// на daily_history и applications.
+// Хук агрегирует данные для компактных счётчиков статусов в шапке
+// (applied/screen/interview/offer) и поддерживает их актуальность через
+// realtime-подписку на applications. Раньше здесь были streak и "задач за
+// неделю" — убраны вместе с экраном "Сегодня".
 
 import { useEffect, useState, useCallback } from 'react';
 import {
-  calculateStreak,
-  calculateWeekTotal,
-  type DailyHistoryEntry,
+  calculateHeaderStatusCounts,
+  type HeaderStatusCounts,
+  type Application,
 } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
 
-interface HeaderStats {
-  streak: number;
-  weekTotal: number;
-  applicationsTotal: number;
-  loading: boolean;
-}
-
-export function useHeaderStats(): HeaderStats {
+export function useHeaderStats(): HeaderStatusCounts & { loading: boolean } {
   const { user } = useAuth();
-  const [history, setHistory] = useState<DailyHistoryEntry[]>([]);
-  const [applicationsTotal, setApplicationsTotal] = useState(0);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
-
-    const [historyRes, applicationsRes] = await Promise.all([
-      supabase.from('daily_history').select('day, tasks_completed').eq('user_id', user.id),
-      supabase
-        .from('applications')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id),
-    ]);
+    const { data, error } = await supabase
+      .from('applications')
+      .select('status')
+      .eq('user_id', user.id);
 
     // Тихо игнорируем ошибку здесь, не обнуляя то, что уже показано: шапка
-    // видна на каждом экране, и всплывающее уведомление при любом сетевом
-    // сбое было бы навязчивым. Если запрос не удался — на экране просто
-    // останутся последние известные значения, а не ложный "0".
-    if (!historyRes.error && historyRes.data) {
-      setHistory(historyRes.data as DailyHistoryEntry[]);
-    }
-    if (!applicationsRes.error) {
-      setApplicationsTotal(applicationsRes.count ?? 0);
+    // видна на каждом экране, всплывающее уведомление при сетевом сбое
+    // было бы навязчивым.
+    if (!error && data) {
+      setApplications(data as Application[]);
     }
     setLoading(false);
   }, [user]);
@@ -58,11 +43,6 @@ export function useHeaderStats(): HeaderStats {
       .channel('header-stats-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'daily_history', filter: `user_id=eq.${user.id}` },
-        () => fetchAll()
-      )
-      .on(
-        'postgres_changes',
         { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${user.id}` },
         () => fetchAll()
       )
@@ -73,10 +53,5 @@ export function useHeaderStats(): HeaderStats {
     };
   }, [user, fetchAll]);
 
-  return {
-    streak: calculateStreak(history),
-    weekTotal: calculateWeekTotal(history),
-    applicationsTotal,
-    loading,
-  };
+  return { ...calculateHeaderStatusCounts(applications), loading };
 }

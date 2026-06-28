@@ -5,10 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '../lib/hooks/useAuth';
 
 const TABS = [
-  { href: '/today', label: 'Сегодня' },
   { href: '/applications', label: 'Отклики' },
   { href: '/analytics', label: 'Аналитика' },
-  { href: '/progress', label: 'Прогресс' },
   { href: '/resources', label: 'Ресурсы и ссылки' },
 ] as const;
 

@@ -62,6 +62,8 @@ export function useApplications() {
         applied_at: now,
         status: 'applied',
         note: '',
+        salary: '',
+        experience_required: '',
       })
       .select()
       .single();
@@ -185,6 +187,55 @@ export function useApplications() {
     [applications, showError]
   );
 
+  /**
+   * Изменение только времени (часы:минуты) отклика, не трогая календарную
+   * дату — отдельный input для времени в UI, см. requirement "время отклика
+   * для аналитики". Логика зеркальна updateAppliedDate, но с другой осью.
+   */
+  const updateAppliedTime = useCallback(
+    (id: string, newTime: string) => {
+      const current = applications.find((app) => app.id === id);
+      if (!current) return;
+
+      const baseDate = current.applied_at ? new Date(current.applied_at) : new Date();
+      const [hours, minutes] = newTime.split(':').map(Number);
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) return;
+
+      const combined = new Date(
+        baseDate.getFullYear(),
+        baseDate.getMonth(),
+        baseDate.getDate(),
+        hours,
+        minutes
+      );
+      const newAppliedAt = combined.toISOString();
+      const previousAt = current.applied_at;
+
+      setApplications((prev) =>
+        prev.map((app) => (app.id === id ? { ...app, applied_at: newAppliedAt } : app))
+      );
+
+      const key = `${id}:applied_at`;
+      if (debounceTimers.current[key]) {
+        clearTimeout(debounceTimers.current[key]);
+      }
+      debounceTimers.current[key] = setTimeout(async () => {
+        const { error } = await supabase
+          .from('applications')
+          .update({ applied_at: newAppliedAt, updated_at: new Date().toISOString() })
+          .eq('id', id);
+
+        if (error) {
+          showError('Не удалось сохранить время отклика. Попробуйте ещё раз.');
+          setApplications((prev) =>
+            prev.map((app) => (app.id === id ? { ...app, applied_at: previousAt } : app))
+          );
+        }
+      }, 500);
+    },
+    [applications, showError]
+  );
+
   const deleteApplication = useCallback(
     async (id: string) => {
       const removed = applications.find((app) => app.id === id);
@@ -242,5 +293,14 @@ export function useApplications() {
     [user, applications, showError]
   );
 
-  return { applications, loading, addApplication, updateField, updateStatus, updateAppliedDate, deleteApplication };
+  return {
+    applications,
+    loading,
+    addApplication,
+    updateField,
+    updateStatus,
+    updateAppliedDate,
+    updateAppliedTime,
+    deleteApplication,
+  };
 }

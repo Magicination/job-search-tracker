@@ -8,7 +8,7 @@
 // пароль?" на экране входа): когда человек переходит по ссылке из такого
 // письма, Supabase создаёт временную сессию ДО того, как у него есть новый
 // пароль. Без этого флага AppShell увидел бы user != null и сразу же
-// перенаправил на /today, не дав показать форму "введите новый пароль".
+// перенаправил на /applications, не дав показать форму "введите новый пароль".
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';

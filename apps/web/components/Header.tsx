@@ -16,7 +16,7 @@ function StatPill({ label, value, accentClass }: { label: string; value: number 
 
 export function Header() {
   const { user } = useAuth();
-  const { streak, weekTotal, applicationsTotal } = useHeaderStats();
+  const { applied, screen, interview, offer } = useHeaderStats();
 
   if (!user) return null;
 
@@ -27,9 +27,10 @@ export function Header() {
           <span className="truncate text-sm text-text-dim">{user.email}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <StatPill label="дней подряд" value={streak} accentClass="text-accent-amber" />
-          <StatPill label="задач за неделю" value={weekTotal} accentClass="text-accent-teal" />
-          <StatPill label="откликов всего" value={applicationsTotal} accentClass="text-accent-blue" />
+          <StatPill label="отправлено" value={applied} accentClass="text-accent-blue" />
+          <StatPill label="скрининг" value={screen} accentClass="text-accent-amber" />
+          <StatPill label="интервью" value={interview} accentClass="text-accent-coral" />
+          <StatPill label="оффер" value={offer} accentClass="text-accent-teal" />
           <ThemeToggle />
           <button
             onClick={() => supabase.auth.signOut()}

@@ -96,6 +96,30 @@ export function calculateFunnelFromHistory(
 // ============================================================
 
 /**
+ * Счётчики по текущему статусу для компактного отображения в шапке —
+ * сколько откликов сейчас в каждой стадии. В отличие от воронки выше, здесь
+ * считается ТЕКУЩЕЕ состояние (срез "прямо сейчас"), не история — в шапке
+ * нужно видеть, сколько у вас сейчас открытых процессов на каждой стадии,
+ * не сколько всего когда-либо побывало в этой стадии.
+ */
+export interface HeaderStatusCounts {
+  applied: number;
+  screen: number;
+  interview: number;
+  offer: number;
+}
+
+export function calculateHeaderStatusCounts(applications: Application[]): HeaderStatusCounts {
+  const counts: HeaderStatusCounts = { applied: 0, screen: 0, interview: 0, offer: 0 };
+  for (const app of applications) {
+    if (app.status in counts) {
+      counts[app.status as keyof HeaderStatusCounts] += 1;
+    }
+  }
+  return counts;
+}
+
+/**
  * Среднее количество дней от подачи отклика (статус 'applied') до первого
  * изменения статуса (любого — screen/interview/rejected). Возвращает null,
  * если данных недостаточно (нет ни одного перехода).
@@ -213,24 +237,27 @@ export function calculateConversionByDayOfWeek(
   );
 }
 
-export type TimeOfDayBucket = 'Утро (6–12)' | 'День (12–18)' | 'Вечер (18–24)' | 'Ночь (0–6)';
-
-function getTimeOfDayBucket(appliedAt: string): TimeOfDayBucket {
-  const hour = new Date(appliedAt).getHours();
-  if (hour >= 6 && hour < 12) return 'Утро (6–12)';
-  if (hour >= 12 && hour < 18) return 'День (12–18)';
-  if (hour >= 18 && hour < 24) return 'Вечер (18–24)';
-  return 'Ночь (0–6)';
-}
-
-/** Конверсия по времени суток отклика. Та же оговорка про applied_at, что выше. */
-export function calculateConversionByTimeOfDay(
+/**
+ * Конверсия по часу отклика (0–23, локальное время устройства на момент
+ * подачи). Возвращает все 24 часа, даже если откликов в какой-то час не
+ * было (total=0) — это нужно, чтобы UI мог нарисовать полный график 00–24,
+ * а не только часы, где что-то произошло.
+ */
+export function calculateConversionByHour(
   applications: Application[],
   history: ApplicationStatusHistoryEntry[]
 ): GroupedConversion[] {
-  return buildGroupedConversion(applications, history, (app) =>
-    app.applied_at ? getTimeOfDayBucket(app.applied_at) : null
+  const grouped = buildGroupedConversion(applications, history, (app) =>
+    app.applied_at ? String(new Date(app.applied_at).getHours()).padStart(2, '0') : null
   );
+
+  const byHour = new Map(grouped.map((g) => [g.label, g]));
+  const allHours: GroupedConversion[] = [];
+  for (let h = 0; h < 24; h++) {
+    const label = String(h).padStart(2, '0');
+    allHours.push(byHour.get(label) ?? { label, total: 0, reachedInterviewOrBetter: 0, conversionRate: 0 });
+  }
+  return allHours;
 }
 
 /** Конверсия по источнику отклика (hh.ru, LinkedIn и т.д.). Пустой source пропускается. */
@@ -251,5 +278,16 @@ export function calculateConversionByResumeVersion(
 ): GroupedConversion[] {
   return buildGroupedConversion(applications, history, (app) =>
     app.resume_version_id ? versionNameById.get(app.resume_version_id) ?? null : null
+  );
+}
+
+/** Конверсия по использованной версии сопроводительного письма. Без версии — пропускается. */
+export function calculateConversionByCoverLetterVersion(
+  applications: Application[],
+  history: ApplicationStatusHistoryEntry[],
+  versionNameById: Map<string, string>
+): GroupedConversion[] {
+  return buildGroupedConversion(applications, history, (app) =>
+    app.cover_letter_version_id ? versionNameById.get(app.cover_letter_version_id) ?? null : null
   );
 }

@@ -21,8 +21,8 @@ npm run dev
 
 ## Структура
 
-- `app/` — роуты Next.js App Router (`/today`, `/schedule`, `/applications`,
-  `/progress`, `/resources`, `/login`)
+- `app/` — роуты Next.js App Router (`/applications`, `/analytics`,
+  `/resources`, `/login`)
 - `components/` — общие UI-компоненты (Header, NavTabs, AppShell, Badge)
 - `lib/hooks/` — React-хуки с бизнес-логикой экранов (fetch + realtime + optimistic update)
 - `lib/supabase.ts` — клиент Supabase для браузера (localStorage по умолчанию)

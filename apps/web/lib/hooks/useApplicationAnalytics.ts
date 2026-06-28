@@ -1,7 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import type { Application, ApplicationStatusHistoryEntry, ResumeVersion } from '@job-search-tracker/shared';
+import type {
+  Application,
+  ApplicationStatusHistoryEntry,
+  ResumeVersion,
+  CoverLetterVersion,
+} from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
 import { useToast } from './useToast';
@@ -12,23 +17,26 @@ export function useApplicationAnalytics() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [history, setHistory] = useState<ApplicationStatusHistoryEntry[]>([]);
   const [resumeVersions, setResumeVersions] = useState<ResumeVersion[]>([]);
+  const [coverLetterVersions, setCoverLetterVersions] = useState<CoverLetterVersion[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
 
-    const [appsRes, historyRes, versionsRes] = await Promise.all([
+    const [appsRes, historyRes, versionsRes, coverLettersRes] = await Promise.all([
       supabase.from('applications').select('*').eq('user_id', user.id),
       supabase.from('application_status_history').select('*').eq('user_id', user.id),
       supabase.from('resume_versions').select('*').eq('user_id', user.id),
+      supabase.from('cover_letter_versions').select('*').eq('user_id', user.id),
     ]);
 
-    if (appsRes.error || historyRes.error || versionsRes.error) {
+    if (appsRes.error || historyRes.error || versionsRes.error || coverLettersRes.error) {
       showError('Не удалось загрузить данные для аналитики. Проверьте соединение и обновите страницу.');
     }
     if (appsRes.data) setApplications(appsRes.data as Application[]);
     if (historyRes.data) setHistory(historyRes.data as ApplicationStatusHistoryEntry[]);
     if (versionsRes.data) setResumeVersions(versionsRes.data as ResumeVersion[]);
+    if (coverLettersRes.data) setCoverLetterVersions(coverLettersRes.data as CoverLetterVersion[]);
     setLoading(false);
   }, [user, showError]);
 
@@ -58,6 +66,11 @@ export function useApplicationAnalytics() {
         { event: '*', schema: 'public', table: 'resume_versions', filter: `user_id=eq.${user.id}` },
         () => fetchAll()
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cover_letter_versions', filter: `user_id=eq.${user.id}` },
+        () => fetchAll()
+      )
       .subscribe();
 
     return () => {
@@ -66,5 +79,5 @@ export function useApplicationAnalytics() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  return { applications, history, resumeVersions, loading };
+  return { applications, history, resumeVersions, coverLetterVersions, loading };
 }

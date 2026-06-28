@@ -47,7 +47,10 @@ export interface Application {
   applied_at: string | null; // точное время отклика (timestamptz), для анализа дня недели/времени суток
   status: ApplicationStatus;
   note: string;
-  resume_version_id: string | null; // ссылка на использованную версию пакета документов
+  resume_version_id: string | null; // ссылка на использованную версию резюме
+  cover_letter_version_id: string | null; // ссылка на использованную версию сопроводительного
+  salary: string; // свободный текст — диапазон/валюта вводятся пользователем как есть
+  experience_required: string; // требуемый опыт по вакансии, свободный текст
   created_at: string;
   updated_at: string;
 }
@@ -57,7 +60,19 @@ export interface ResumeVersion {
   user_id: string;
   name: string; // например "v2 — упор на SQL/аналитику"
   notes: string;
-  file_url: string | null; // необязательная ссылка на файл (PDF/docx)
+  file_url: string | null; // ручная ссылка (для совместимости со старыми записями)
+  file_path: string | null; // путь в Supabase Storage bucket application-documents
+  file_name: string; // оригинальное имя загруженного файла, для отображения
+  created_at: string;
+}
+
+export interface CoverLetterVersion {
+  id: string;
+  user_id: string;
+  name: string;
+  notes: string;
+  file_path: string | null;
+  file_name: string;
   created_at: string;
 }
 
@@ -94,4 +109,22 @@ export interface DailyHistory {
   user_id: string;
   day: string;
   tasks_completed: number;
+}
+
+export type SharedResourceCategory =
+  | 'job_boards'
+  | 'internships'
+  | 'sql_analytics'
+  | 'english'
+  | 'interview_prep'
+  | 'other';
+
+export interface SharedResource {
+  id: string;
+  user_id: string; // автор записи — видно всем, не только автору
+  title: string;
+  url: string;
+  note: string;
+  category: SharedResourceCategory;
+  created_at: string;
 }
