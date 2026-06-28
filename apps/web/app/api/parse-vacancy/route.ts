@@ -81,8 +81,13 @@ export async function POST(request: NextRequest) {
   try {
     const response = await fetch(`https://api.hh.ru/vacancies/${vacancyId}`, {
       headers: {
-        // hh.ru API требует осмысленный User-Agent — без него можно получить 403.
-        'User-Agent': 'job-search-tracker/1.0 (personal use)',
+        // hh.ru API требует осмысленный User-Agent (см. официальные примеры
+        // в документации hhru/api, формат "Имя/Версия (контакт)"). Избегаем
+        // явных placeholder-доменов вида example.com в контакте — некоторые
+        // анти-спам/анти-бот фильтры распознают их как признак автоматического
+        // трафика и блокируют сильнее, чем полное отсутствие контакта.
+        'User-Agent': 'job-search-tracker/1.0',
+        Accept: 'application/json',
       },
       // Не кэшируем — данные о вакансии (особенно зарплата/статус) могут устареть.
       cache: 'no-store',
@@ -96,8 +101,21 @@ export async function POST(request: NextRequest) {
     }
 
     if (!response.ok) {
+      // Логируем тело ответа hh.ru на сервере (видно в Vercel → Deployments →
+      // Functions → Logs) — это покажет точную причину отказа (anti-bot
+      // блокировка по IP, требование авторизации и т.д.), а не просто код.
+      const bodyText = await response.text().catch(() => '');
+      console.error(
+        `[parse-vacancy] hh.ru API ${response.status} для vacancyId=${vacancyId}. Тело ответа: ${bodyText.slice(0, 500)}`
+      );
+      // Временно показываем текст ответа hh.ru прямо в UI (не только в
+      // серверных логах) — это упрощает диагностику причины 403/иной
+      // ошибки без необходимости лезть в Vercel Dashboard. Снять эту
+      // детализацию из пользовательского сообщения можно после того, как
+      // причина будет понятна и устранена.
+      const detail = bodyText ? ` Детали: ${bodyText.slice(0, 200)}` : '';
       return NextResponse.json(
-        { error: `hh.ru API вернул ошибку (${response.status}). Попробуйте позже или заполните поля вручную.` },
+        { error: `hh.ru API вернул ошибку (${response.status}).${detail}` },
         { status: 502 }
       );
     }
@@ -113,7 +131,8 @@ export async function POST(request: NextRequest) {
     };
 
     return NextResponse.json(parsed);
-  } catch {
+  } catch (err) {
+    console.error('[parse-vacancy] Сетевая ошибка при запросе к hh.ru:', err);
     return NextResponse.json(
       { error: 'Не удалось связаться с hh.ru. Проверьте соединение и попробуйте ещё раз.' },
       { status: 502 }
