@@ -6,6 +6,7 @@ import { getTodayLocal } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
 import { useToast } from './useToast';
+import { isHhUrl, extractHhVacancyId, fetchHhVacancyFromBrowser } from '../hhVacancyParser';
 
 export function useApplications() {
   const { user } = useAuth();
@@ -103,41 +104,75 @@ export function useApplications() {
 
   /**
    * Создаёт отклик, предзаполненный данными, разобранными по ссылке на
-   * вакансию (сейчас только hh.ru, см. app/api/parse-vacancy/route.ts).
-   * Источник ('hh.ru') проставляется автоматически — раз ссылка именно
-   * с hh.ru, нет смысла спрашивать пользователя.
+   * вакансию (сейчас только hh.ru). Источник ('hh.ru') проставляется
+   * автоматически — раз ссылка именно с hh.ru, нет смысла спрашивать
+   * пользователя.
+   *
+   * Сначала пробуем запрос прямо из браузера (lib/hhVacancyParser.ts) — у
+   * серверных функций Vercel hh.ru возвращает 403 (похоже на блокировку
+   * датацентровых IP анти-бот защитой), а у обычного пользовательского IP
+   * шансы на успех выше. Если браузерный запрос не прошёл (CORS, сеть) —
+   * пробуем /api/parse-vacancy как запасной путь.
    */
   const addApplicationFromUrl = useCallback(
     async (url: string): Promise<{ success: boolean; error?: string }> => {
-      try {
-        const response = await fetch('/api/parse-vacancy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url }),
-        });
-
-        const parsed = await response.json();
-
-        if (!response.ok) {
-          return { success: false, error: parsed.error ?? 'Не удалось разобрать ссылку.' };
-        }
-
-        const created = await insertApplicationWithHistory({
-          company: parsed.company ?? '',
-          role: parsed.role ?? '',
-          salary: parsed.salary ?? '',
-          experience_required: parsed.experienceRequired ?? '',
-          source: 'hh.ru',
-        });
-
-        if (!created) {
-          return { success: false, error: 'Данные разобраны, но не удалось сохранить отклик.' };
-        }
-
-        return { success: true };
-      } catch {
-        return { success: false, error: 'Не удалось связаться с сервером. Проверьте соединение.' };
+      if (!isHhUrl(url)) {
+        return { success: false, error: 'Автозаполнение пока поддерживает только ссылки hh.ru.' };
       }
+
+      const vacancyId = extractHhVacancyId(url);
+      if (!vacancyId) {
+        return {
+          success: false,
+          error: 'Не удалось найти ID вакансии в ссылке. Проверьте, что это ссылка вида hh.ru/vacancy/12345678.',
+        };
+      }
+
+      let parsed: { company: string; role: string; salary: string; experienceRequired: string } | null = null;
+      let lastError = '';
+
+      try {
+        parsed = await fetchHhVacancyFromBrowser(vacancyId);
+      } catch (browserErr) {
+        lastError = browserErr instanceof Error ? browserErr.message : 'Браузерный запрос не удался.';
+
+        // Fallback на сервер — оставлен на случай, если у конкретного
+        // пользователя сетевые условия отличаются (например, hh.ru снимет
+        // IP-блокировку, или проблема была именно в CORS, не в IP).
+        try {
+          const response = await fetch('/api/parse-vacancy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url }),
+          });
+          const serverParsed = await response.json();
+          if (response.ok) {
+            parsed = serverParsed;
+          } else {
+            lastError = serverParsed.error ?? lastError;
+          }
+        } catch {
+          // оставляем lastError от браузерной попытки — он информативнее
+        }
+      }
+
+      if (!parsed) {
+        return { success: false, error: lastError || 'Не удалось разобрать ссылку.' };
+      }
+
+      const created = await insertApplicationWithHistory({
+        company: parsed.company ?? '',
+        role: parsed.role ?? '',
+        salary: parsed.salary ?? '',
+        experience_required: parsed.experienceRequired ?? '',
+        source: 'hh.ru',
+      });
+
+      if (!created) {
+        return { success: false, error: 'Данные разобраны, но не удалось сохранить отклик.' };
+      }
+
+      return { success: true };
     },
     [insertApplicationWithHistory]
   );
