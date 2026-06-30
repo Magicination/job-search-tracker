@@ -6,6 +6,7 @@ interface DocumentVersionLike {
   id: string;
   name: string;
   file_name: string;
+  body_text?: string;
 }
 
 export function DocumentVersionsPanel({
@@ -15,24 +16,29 @@ export function DocumentVersionsPanel({
   onAdd,
   onDelete,
   defaultOpen,
+  showTextField,
 }: {
   title: string;
   emptyHint: string;
   versions: DocumentVersionLike[];
-  onAdd: (name: string, notes: string, file: File | null) => void;
+  onAdd: (name: string, notes: string, file: File | null, bodyText: string) => void;
   onDelete: (id: string) => void;
   defaultOpen?: boolean;
+  /** Показывать поле для ввода текста письма напрямую — нужно для сопроводительных, не для резюме. */
+  showTextField?: boolean;
 }) {
   const [name, setName] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [bodyText, setBodyText] = useState('');
   const [open, setOpen] = useState(defaultOpen ?? versions.length === 0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleAdd() {
     if (!name.trim()) return;
-    onAdd(name.trim(), '', file);
+    onAdd(name.trim(), '', file, bodyText);
     setName('');
     setFile(null);
+    setBodyText('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
@@ -54,15 +60,18 @@ export function DocumentVersionsPanel({
             <p className="text-xs text-text-faint">{emptyHint}</p>
           ) : (
             versions.map((v) => (
-              <div key={v.id} className="flex items-center justify-between gap-2 rounded-md bg-panel-2 px-2 py-1.5">
+              <div key={v.id} className="flex items-start justify-between gap-2 rounded-md bg-panel-2 px-2 py-1.5">
                 <div className="flex flex-col">
                   <span className="text-sm text-text">{v.name}</span>
                   {v.file_name && <span className="text-xs text-text-faint">📎 {v.file_name}</span>}
+                  {v.body_text && (
+                    <span className="mt-1 max-w-md text-xs text-text-faint line-clamp-2">{v.body_text}</span>
+                  )}
                 </div>
                 <button
                   onClick={() => onDelete(v.id)}
                   aria-label="Удалить версию"
-                  className="text-text-faint hover:text-accent-coral"
+                  className="shrink-0 text-text-faint hover:text-accent-coral"
                 >
                   ✕
                 </button>
@@ -90,6 +99,15 @@ export function DocumentVersionsPanel({
               Добавить
             </button>
           </div>
+          {showTextField && (
+            <textarea
+              value={bodyText}
+              onChange={(e) => setBodyText(e.target.value)}
+              placeholder="Можно ввести текст письма прямо здесь — необязательно вместе с файлом, можно и то и другое, и можно только текст без файла"
+              rows={3}
+              className="resize-none rounded-lg border border-border bg-panel-2 px-3 py-2 text-sm text-text outline-none focus-visible:border-accent-blue"
+            />
+          )}
           <p className="text-xs text-text-faint">
             Файл необязателен — можно просто завести название для отслеживания, а файл прикрепить позже.
             Поддерживаются PDF, DOC, DOCX, RTF, ODT, до 10 МБ.

@@ -98,8 +98,9 @@ export function useApplications() {
     [user, showError]
   );
 
-  const addApplication = useCallback(async () => {
-    await insertApplicationWithHistory({});
+  const addApplication = useCallback(async (): Promise<string | null> => {
+    const created = await insertApplicationWithHistory({});
+    return created?.id ?? null;
   }, [insertApplicationWithHistory]);
 
   /**
@@ -115,7 +116,7 @@ export function useApplications() {
    * пробуем /api/parse-vacancy как запасной путь.
    */
   const addApplicationFromUrl = useCallback(
-    async (url: string): Promise<{ success: boolean; error?: string }> => {
+    async (url: string): Promise<{ success: boolean; error?: string; id?: string }> => {
       if (!isHhUrl(url)) {
         return { success: false, error: 'Автозаполнение пока поддерживает только ссылки hh.ru.' };
       }
@@ -172,7 +173,7 @@ export function useApplications() {
         return { success: false, error: 'Данные разобраны, но не удалось сохранить отклик.' };
       }
 
-      return { success: true };
+      return { success: true, id: created.id };
     },
     [insertApplicationWithHistory]
   );

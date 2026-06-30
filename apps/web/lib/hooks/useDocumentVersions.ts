@@ -63,9 +63,11 @@ export function useDocumentVersions<T extends DocumentVersionRow>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, tableName]);
 
-  /** file может быть null — версия без прикреплённого файла (просто заметка/название) допустима. */
+  /** file может быть null — версия без прикреплённого файла (просто заметка/название) допустима.
+   *  extraFields — дополнительные поля, специфичные для конкретной таблицы
+   *  (например body_text для cover_letter_versions), которых нет у resume_versions. */
   const addVersion = useCallback(
-    async (name: string, notes: string, file: File | null) => {
+    async (name: string, notes: string, file: File | null, extraFields?: Record<string, unknown>) => {
       if (!user || !name.trim()) return;
 
       if (file) {
@@ -92,7 +94,14 @@ export function useDocumentVersions<T extends DocumentVersionRow>(
 
       const { data, error } = await supabase
         .from(tableName)
-        .insert({ user_id: user.id, name: name.trim(), notes, file_path: filePath, file_name: fileName })
+        .insert({
+          user_id: user.id,
+          name: name.trim(),
+          notes,
+          file_path: filePath,
+          file_name: fileName,
+          ...extraFields,
+        })
         .select()
         .single();
 

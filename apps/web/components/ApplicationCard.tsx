@@ -6,11 +6,22 @@ import {
   APPLICATION_STATUS_BADGE_VARIANT,
   APPLICATION_STATUS_LABELS,
   STANDARD_APPLICATION_SOURCES,
+  STANDARD_EXPERIENCE_LEVELS,
 } from '@job-search-tracker/shared';
 import { Badge } from './Badge';
 import { getDocumentDownloadUrl } from '../lib/documentStorage';
 
 const STATUS_OPTIONS: ApplicationStatus[] = ['applied', 'screen', 'interview', 'offer', 'rejected'];
+
+/** Грубая проверка "похоже на URL" — без строгой валидации, просто чтобы решить, рисовать ли ссылку. */
+function looksLikeUrl(text: string): boolean {
+  return /^(https?:\/\/|www\.)\S+\.\S+/i.test(text.trim());
+}
+
+function toHref(text: string): string {
+  const trimmed = text.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <span className="text-xs text-text-faint">{children}</span>;
@@ -35,13 +46,28 @@ function TextField({
   );
 }
 
-function SourceField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [customMode, setCustomMode] = useState(value !== '' && !STANDARD_APPLICATION_SOURCES.includes(value));
+/**
+ * Выбор из стандартного списка + возможность ввести своё значение —
+ * переиспользуется и для источника отклика, и для уровня опыта. customLabel
+ * настраивает подпись пункта "ввести вручную" под конкретное поле.
+ */
+function SelectOrCustomField({
+  value,
+  onChange,
+  options,
+  customPlaceholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  customPlaceholder: string;
+}) {
+  const [customMode, setCustomMode] = useState(value !== '' && !options.includes(value));
 
   if (customMode) {
     return (
       <div className="flex gap-1">
-        <TextField value={value} onChange={onChange} placeholder="Свой источник" />
+        <TextField value={value} onChange={onChange} placeholder={customPlaceholder} />
         <button
           type="button"
           onClick={() => setCustomMode(false)}
@@ -56,7 +82,7 @@ function SourceField({ value, onChange }: { value: string; onChange: (v: string)
 
   return (
     <select
-      value={STANDARD_APPLICATION_SOURCES.includes(value) ? value : ''}
+      value={options.includes(value) ? value : ''}
       onChange={(e) => {
         if (e.target.value === '__custom__') {
           setCustomMode(true);
@@ -68,13 +94,33 @@ function SourceField({ value, onChange }: { value: string; onChange: (v: string)
       className="w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text outline-none focus-visible:border-accent-blue"
     >
       <option value="">— выбрать —</option>
-      {STANDARD_APPLICATION_SOURCES.map((s) => (
+      {options.map((s) => (
         <option key={s} value={s}>
           {s}
         </option>
       ))}
       <option value="__custom__">Другое (ввести вручную)…</option>
     </select>
+  );
+}
+
+/** Заметка — текстовое поле, но если содержимое похоже на ссылку, под ним
+ *  показывается кликабельный вариант (открывается в новой вкладке). */
+function NoteField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <TextField value={value} onChange={onChange} placeholder="Заметка" />
+      {looksLikeUrl(value) && (
+        <a
+          href={toHref(value)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 block truncate text-xs text-accent-blue underline-offset-2 hover:underline"
+        >
+          {value.trim()}
+        </a>
+      )}
+    </div>
   );
 }
 
@@ -133,7 +179,12 @@ export function ApplicationCard({
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div>
           <FieldLabel>Источник</FieldLabel>
-          <SourceField value={app.source} onChange={(v) => onUpdate('source', v, 0)} />
+          <SelectOrCustomField
+            value={app.source}
+            onChange={(v) => onUpdate('source', v, 0)}
+            options={STANDARD_APPLICATION_SOURCES}
+            customPlaceholder="Свой источник"
+          />
         </div>
         <div>
           <FieldLabel>Дата</FieldLabel>
@@ -150,7 +201,7 @@ export function ApplicationCard({
             type="time"
             value={appliedTime}
             onChange={(e) => onTimeChange(e.target.value)}
-            className="w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text outline-none focus-visible:border-accent-blue"
+            className="w-full rounded-md border border-border bg-panel-2 px-3 py-2.5 text-base text-text outline-none focus-visible:border-accent-blue [&::-webkit-calendar-picker-indicator]:opacity-70"
           />
         </div>
         <div>
@@ -176,10 +227,11 @@ export function ApplicationCard({
         </div>
         <div>
           <FieldLabel>Опыт</FieldLabel>
-          <TextField
+          <SelectOrCustomField
             value={app.experience_required}
             onChange={(v) => onUpdate('experience_required', v)}
-            placeholder="напр. 1-3 года"
+            options={STANDARD_EXPERIENCE_LEVELS}
+            customPlaceholder="напр. 1–3 года"
           />
         </div>
         <div>
@@ -239,7 +291,7 @@ export function ApplicationCard({
       <div className="mt-2 flex items-center justify-between gap-2">
         <div className="flex-1">
           <FieldLabel>Заметка</FieldLabel>
-          <TextField value={app.note} onChange={(v) => onUpdate('note', v)} placeholder="Заметка" />
+          <NoteField value={app.note} onChange={(v) => onUpdate('note', v)} />
         </div>
         <Badge label={APPLICATION_STATUS_LABELS[app.status]} variant={APPLICATION_STATUS_BADGE_VARIANT[app.status]} />
       </div>

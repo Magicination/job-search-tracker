@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   calculateConversionFunnel,
   calculateFunnelFromHistory,
@@ -15,6 +16,35 @@ import {
 import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics';
 import { SkeletonCard } from '../../components/Skeleton';
 import { HourlyChart } from '../../components/HourlyChart';
+
+/** Сворачиваемая секция-карточка — все блоки аналитики однотипно сворачиваются,
+ *  чтобы страница не разрасталась в длинную простыню при большом числе откликов. */
+function CollapsibleSection({
+  title,
+  subtitle,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="rounded-lg border border-border-soft bg-panel p-4">
+      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between gap-2 text-left">
+        <div>
+          <h2 className="text-sm font-medium text-text">{title}</h2>
+          {subtitle && <p className="text-xs text-text-faint">{subtitle}</p>}
+        </div>
+        <span className="shrink-0 text-text-faint">{open ? '▾' : '▸'}</span>
+      </button>
+      {open && <div className="mt-3">{children}</div>}
+    </div>
+  );
+}
 
 // Те же CSS-переменные, что и в Badge.tsx — меняются вместе с темой
 // (.light в globals.css), в отличие от фиксированного hex.
@@ -55,43 +85,32 @@ function FunnelStage({
   );
 }
 
-function GroupedTable({
-  title,
-  groups,
-  emptyHint,
-}: {
-  title: string;
-  groups: GroupedConversion[];
-  emptyHint: string;
-}) {
+function GroupedTableBody({ groups, emptyHint }: { groups: GroupedConversion[]; emptyHint: string }) {
+  if (groups.length === 0) {
+    return <p className="text-sm text-text-faint">{emptyHint}</p>;
+  }
+
   return (
-    <div className="rounded-lg border border-border-soft bg-panel p-4">
-      <h2 className="mb-3 text-sm font-medium text-text">{title}</h2>
-      {groups.length === 0 ? (
-        <p className="text-sm text-text-faint">{emptyHint}</p>
-      ) : (
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="text-xs text-text-dim">
-              <th className="pb-2 font-medium">Группа</th>
-              <th className="pb-2 font-medium">Откликов</th>
-              <th className="pb-2 font-medium">До интервью+</th>
-              <th className="pb-2 font-medium">Конверсия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {groups.map((g) => (
-              <tr key={g.label} className="border-t border-border-soft">
-                <td className="py-1.5 text-text">{g.label}</td>
-                <td className="py-1.5 text-text-dim tabular-nums">{g.total}</td>
-                <td className="py-1.5 text-text-dim tabular-nums">{g.reachedInterviewOrBetter}</td>
-                <td className="py-1.5 tabular-nums text-accent-teal">{g.conversionRate}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+    <table className="w-full text-left text-sm">
+      <thead>
+        <tr className="text-xs text-text-dim">
+          <th className="pb-2 font-medium">Группа</th>
+          <th className="pb-2 font-medium">Откликов</th>
+          <th className="pb-2 font-medium">До интервью+</th>
+          <th className="pb-2 font-medium">Конверсия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {groups.map((g) => (
+          <tr key={g.label} className="border-t border-border-soft">
+            <td className="py-1.5 text-text">{g.label}</td>
+            <td className="py-1.5 text-text-dim tabular-nums">{g.total}</td>
+            <td className="py-1.5 text-text-dim tabular-nums">{g.reachedInterviewOrBetter}</td>
+            <td className="py-1.5 tabular-nums text-accent-teal">{g.conversionRate}%</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -144,10 +163,7 @@ export default function AnalyticsPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-lg font-semibold text-text">Аналитика</h1>
 
-      <div className="rounded-lg border border-border-soft bg-panel p-4">
-        <h2 className="mb-3 text-sm font-medium text-text">
-          Воронка (по истории — учитывает все этапы, через которые прошёл отклик)
-        </h2>
+      <CollapsibleSection title="Воронка конверсии" subtitle="По истории — учитывает все этапы, через которые прошёл отклик">
         <div className="flex flex-col gap-3">
           <FunnelStage label="Отклик отправлен" count={historyFunnel.applied} percent={100} variant="blue" />
           <FunnelStage
@@ -168,15 +184,20 @@ export default function AnalyticsPage() {
             percent={pct(historyFunnel.offer)}
             variant="teal"
           />
+          <FunnelStage
+            label="Отказ"
+            count={historyFunnel.rejected}
+            percent={pct(historyFunnel.rejected)}
+            variant="neutral"
+          />
         </div>
         <p className="mt-3 text-xs text-text-faint">
           Текущие статусы прямо сейчас: отправлено {currentFunnel.applied}, скрининг {currentFunnel.screen},
           интервью {currentFunnel.interview}, оффер {currentFunnel.offer}, отказ {currentFunnel.rejected}.
         </p>
-      </div>
+      </CollapsibleSection>
 
-      <div className="rounded-lg border border-border-soft bg-panel p-4">
-        <h2 className="mb-1 text-sm font-medium text-text">Среднее время до первого ответа</h2>
+      <CollapsibleSection title="Среднее время до первого ответа">
         <p className="text-2xl font-semibold tabular-nums text-text">
           {avgDays !== null ? `${avgDays} дн.` : '—'}
         </p>
@@ -185,38 +206,31 @@ export default function AnalyticsPage() {
             ? 'От момента отклика до первого изменения статуса (скрининг, интервью или отказ).'
             : 'Пока нет ни одного отклика с изменённым статусом — данных недостаточно.'}
         </p>
-      </div>
+      </CollapsibleSection>
 
-      <div className="rounded-lg border border-border-soft bg-panel p-4">
-        <h2 className="mb-3 text-sm font-medium text-text">По часу отклика (00–24)</h2>
+      <CollapsibleSection title="По часу отклика (00–24)" subtitle="Когда вы чаще откликаетесь и насколько это работает">
         <HourlyChart data={byHour} />
-        <p className="mt-2 text-xs text-text-faint">
-          Высота столбика — сколько откликов отправлено в этот час, цвет —
-          доля из них, дошедших до интервью или дальше.
-        </p>
-      </div>
+      </CollapsibleSection>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <GroupedTable
-          title="По дню недели отклика"
-          groups={byDayOfWeek}
-          emptyHint="Нет данных — у старых откликов не сохранено точное время отправки."
-        />
-        <GroupedTable
-          title="По источнику"
-          groups={bySource}
-          emptyHint="Добавьте источник (hh.ru, LinkedIn и т.д.) в карточках откликов."
-        />
-        <GroupedTable
-          title="По версии резюме"
-          groups={byResumeVersion}
-          emptyHint="Привяжите отклики к версии резюме на странице «Отклики», чтобы сравнить их эффективность."
-        />
-        <GroupedTable
-          title="По версии сопроводительного"
-          groups={byCoverLetterVersion}
-          emptyHint="Привяжите отклики к версии сопроводительного письма на странице «Отклики»."
-        />
+        <CollapsibleSection title="По дню недели отклика">
+          <GroupedTableBody groups={byDayOfWeek} emptyHint="Нет данных — у старых откликов не сохранено точное время отправки." />
+        </CollapsibleSection>
+        <CollapsibleSection title="По источнику">
+          <GroupedTableBody groups={bySource} emptyHint="Добавьте источник (hh.ru, LinkedIn и т.д.) в карточках откликов." />
+        </CollapsibleSection>
+        <CollapsibleSection title="По версии резюме">
+          <GroupedTableBody
+            groups={byResumeVersion}
+            emptyHint="Привяжите отклики к версии резюме на странице «Отклики», чтобы сравнить их эффективность."
+          />
+        </CollapsibleSection>
+        <CollapsibleSection title="По версии сопроводительного">
+          <GroupedTableBody
+            groups={byCoverLetterVersion}
+            emptyHint="Привяжите отклики к версии сопроводительного письма на странице «Отклики»."
+          />
+        </CollapsibleSection>
       </div>
     </div>
   );

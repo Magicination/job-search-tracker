@@ -71,6 +71,7 @@ export interface CoverLetterVersion {
   user_id: string;
   name: string;
   notes: string;
+  body_text: string; // текст письма, введённый напрямую (необязательно вместе с файлом)
   file_path: string | null;
   file_name: string;
   created_at: string;
