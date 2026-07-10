@@ -6,7 +6,6 @@ import { getTodayLocal } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
 import { useToast } from './useToast';
-import { isHhUrl, extractHhVacancyId, fetchHhVacancyFromBrowser } from '../hhVacancyParser';
 
 export function useApplications() {
   const { user } = useAuth();
@@ -104,75 +103,26 @@ export function useApplications() {
   }, [insertApplicationWithHistory]);
 
   /**
-   * Создаёт отклик, предзаполненный данными, разобранными по ссылке на
-   * вакансию (сейчас только hh.ru). Источник ('hh.ru') проставляется
-   * автоматически — раз ссылка именно с hh.ru, нет смысла спрашивать
-   * пользователя.
-   *
-   * Сначала пробуем запрос прямо из браузера (lib/hhVacancyParser.ts) — у
-   * серверных функций Vercel hh.ru возвращает 403 (похоже на блокировку
-   * датацентровых IP анти-бот защитой), а у обычного пользовательского IP
-   * шансы на успех выше. Если браузерный запрос не прошёл (CORS, сеть) —
-   * пробуем /api/parse-vacancy как запасной путь.
+   * Создаёт отклик из полей, уже разобранных на клиенте — букмарклетом на
+   * странице вакансии hh.ru (читает JobPosting schema прямо из DOM, без
+   * серверных или браузерных запросов к api.hh.ru, которые hh.ru блокирует
+   * анти-бот защитой). Букмарклет передаёт данные через query-параметры
+   * страницы /add, которая и вызывает эту функцию. Ссылка на вакансию
+   * кладётся в note — там уже работает автоопределение и подсветка URL.
    */
-  const addApplicationFromUrl = useCallback(
-    async (url: string): Promise<{ success: boolean; error?: string; id?: string }> => {
-      if (!isHhUrl(url)) {
-        return { success: false, error: 'Автозаполнение пока поддерживает только ссылки hh.ru.' };
-      }
-
-      const vacancyId = extractHhVacancyId(url);
-      if (!vacancyId) {
-        return {
-          success: false,
-          error: 'Не удалось найти ID вакансии в ссылке. Проверьте, что это ссылка вида hh.ru/vacancy/12345678.',
-        };
-      }
-
-      let parsed: { company: string; role: string; salary: string; experienceRequired: string } | null = null;
-      let lastError = '';
-
-      try {
-        parsed = await fetchHhVacancyFromBrowser(vacancyId);
-      } catch (browserErr) {
-        lastError = browserErr instanceof Error ? browserErr.message : 'Браузерный запрос не удался.';
-
-        // Fallback на сервер — оставлен на случай, если у конкретного
-        // пользователя сетевые условия отличаются (например, hh.ru снимет
-        // IP-блокировку, или проблема была именно в CORS, не в IP).
-        try {
-          const response = await fetch('/api/parse-vacancy', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
-          });
-          const serverParsed = await response.json();
-          if (response.ok) {
-            parsed = serverParsed;
-          } else {
-            lastError = serverParsed.error ?? lastError;
-          }
-        } catch {
-          // оставляем lastError от браузерной попытки — он информативнее
-        }
-      }
-
-      if (!parsed) {
-        return { success: false, error: lastError || 'Не удалось разобрать ссылку.' };
-      }
-
-      const created = await insertApplicationWithHistory({
-        company: parsed.company ?? '',
-        role: parsed.role ?? '',
-        salary: parsed.salary ?? '',
-        experience_required: parsed.experienceRequired ?? '',
-        source: 'hh.ru',
-      });
-
+  const addApplicationFromFields = useCallback(
+    async (fields: {
+      company?: string;
+      role?: string;
+      salary?: string;
+      experience_required?: string;
+      source?: string;
+      note?: string;
+    }): Promise<{ success: boolean; error?: string; id?: string }> => {
+      const created = await insertApplicationWithHistory(fields);
       if (!created) {
-        return { success: false, error: 'Данные разобраны, но не удалось сохранить отклик.' };
+        return { success: false, error: 'Не удалось сохранить отклик.' };
       }
-
       return { success: true, id: created.id };
     },
     [insertApplicationWithHistory]
@@ -385,7 +335,7 @@ export function useApplications() {
     applications,
     loading,
     addApplication,
-    addApplicationFromUrl,
+    addApplicationFromFields,
     updateField,
     updateStatus,
     updateAppliedDate,

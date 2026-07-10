@@ -10,7 +10,7 @@ import { useApplicationFilters } from '../../lib/hooks/useApplicationFilters';
 import { ApplicationCard } from '../../components/ApplicationCard';
 import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
 import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
-import { CreateFromUrlBar } from '../../components/CreateFromUrlBar';
+import { BookmarkletCard } from '../../components/BookmarkletCard';
 import { Badge } from '../../components/Badge';
 import { SkeletonList } from '../../components/Skeleton';
 
@@ -67,7 +67,7 @@ export default function ApplicationsPage() {
     applications,
     loading,
     addApplication,
-    addApplicationFromUrl,
+    addApplicationFromFields,
     updateField,
     updateStatus,
     updateAppliedDate,
@@ -103,14 +103,6 @@ export default function ApplicationsPage() {
     if (newId) setExpandedIds((prev) => new Set(prev).add(newId));
   }
 
-  async function handleAddFromUrl(url: string) {
-    const result = await addApplicationFromUrl(url);
-    if (result.success && result.id) {
-      setExpandedIds((prev) => new Set(prev).add(result.id!));
-    }
-    return result;
-  }
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -122,7 +114,7 @@ export default function ApplicationsPage() {
           с чего начать. */}
       <div className="flex flex-col gap-3 rounded-lg border border-accent-amber/30 bg-panel p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-text-dim">Добавьте отклик вручную или автоматически по ссылке на вакансию.</p>
+          <p className="text-sm text-text-dim">Добавьте отклик вручную или автоматически через букмарклет.</p>
           <button
             onClick={handleAddEmpty}
             className="shrink-0 rounded-lg bg-accent-amber px-5 py-2.5 text-sm font-semibold text-bg transition hover:opacity-90"
@@ -130,7 +122,7 @@ export default function ApplicationsPage() {
             + Новый отклик
           </button>
         </div>
-        <CreateFromUrlBar onCreate={handleAddFromUrl} />
+        <BookmarkletCard />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
