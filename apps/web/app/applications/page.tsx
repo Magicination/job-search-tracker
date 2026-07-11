@@ -1,3 +1,6 @@
+
+'use client';
+
 import { useState } from 'react';
 import { useApplications } from '../../lib/hooks/useApplications';
 import { useResumeVersions } from '../../lib/hooks/useResumeVersions';
@@ -7,55 +10,15 @@ import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
 import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
 import { BookmarkletCard } from '../../components/BookmarkletCard';
 import { SkeletonList } from '../../components/Skeleton';
+import { useResumeVersions } from '../../lib/hooks/useResumeVersions';
+import { useApplicationFilters } from '../../lib/hooks/useApplicationFilters';
+import { KanbanBoard } from '../../components/KanbanBoard';
+import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
+import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
+import { BookmarkletCard } from '../../components/BookmarkletCard';
+import { SkeletonList } from '../../components/Skeleton';
 
-/**
- * Свёрнутая по умолчанию строка-сводка отклика — компания, вакансия, статус.
- * Разворачивается в полную ApplicationCard по клику. Сделано так по прямому
- * запросу: список из многих развёрнутых карточек с десятком полей в каждой
- * визуально путает, особенно когда основная масса откликов уже не требует
- * внимания (просто отправлены, ничего нового). Свежесозданный через "+
- * Добавить отклик" или "Создать из ссылки" разворачивается сразу — его
- * обычно сразу хочется дозаполнить.
- */
-function CollapsibleApplicationRow({
-  app,
-  expanded,
-  onToggle,
-  children,
-}: {
-  app: Application;
-  expanded: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  if (expanded) {
-    return (
-      <div>
-        <button
-          onClick={onToggle}
-          className="mb-1 text-xs text-text-faint hover:text-text-dim"
-        >
-          ▾ Свернуть
-        </button>
-        {children}
-      </div>
-    );
-  }
-
-  return (
-    <button
-      onClick={onToggle}
-      className="flex w-full items-center justify-between gap-3 rounded-lg border border-border-soft bg-panel px-4 py-3 text-left transition hover:border-border"
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="truncate text-sm font-medium text-text">{app.company || 'Без названия'}</span>
-        <span className="truncate text-sm text-text-dim">{app.role}</span>
-      </div>
-      <Badge label={APPLICATION_STATUS_LABELS[app.status]} variant={APPLICATION_STATUS_BADGE_VARIANT[app.status]} />
-    </button>
-  );
-}
-
+/** @type definitions and exports are handled by the main component */
 export default function ApplicationsPage() {
   const {
     applications,

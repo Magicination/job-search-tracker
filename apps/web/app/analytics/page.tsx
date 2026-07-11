@@ -8,7 +8,7 @@ import { SkeletonCard } from '../../components/Skeleton';
 import { HourlyChart } from '../../components/HourlyChart';
 
 export default function AnalyticsPage() {
-  const { applications, history, resumeVersions, coverLetterVersions, loading } = useApplicationAnalytics();
+  const { applications, history, resumeVersions, loading } = useApplicationAnalytics();
 
   if (loading) {
     return (
@@ -45,9 +45,6 @@ export default function AnalyticsPage() {
 
   const resumeNameById = new Map(resumeVersions.map((v) => [v.id, v.name]));
   const byResumeVersion = calculateConversionByResumeVersion(applications, history, resumeNameById);
-
-  const coverLetterNameById = new Map(coverLetterVersions.map((v) => [v.id, v.name]));
-  const byCoverLetterVersion = calculateConversionByCoverLetterVersion(applications, history, coverLetterNameById);
 
   const pct = (count: number) =>
     historyFunnel.applied ? Math.round((count / historyFunnel.applied) * 100) : 0;
@@ -96,12 +93,6 @@ export default function AnalyticsPage() {
           <GroupedTableBody
             groups={byResumeVersion}
             emptyHint="Привяжите отклики к версии резюме на странице «Отклики», чтобы сравнить их эффективность."
-          />
-        </CollapsibleSection>
-        <CollapsibleSection title="По версии сопроводительного">
-          <GroupedTableBody
-            groups={byCoverLetterVersion}
-            emptyHint="Привяжите отклики к версии сопроводительного письма на странице «Отклики»."
           />
         </CollapsibleSection>
       </div>
