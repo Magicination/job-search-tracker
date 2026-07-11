@@ -7,7 +7,6 @@ import { useAuth } from '../lib/hooks/useAuth';
 const TABS = [
   { href: '/applications', label: 'Отклики' },
   { href: '/analytics', label: 'Аналитика' },
-  { href: '/resources', label: 'Ресурсы и ссылки' },
 ] as const;
 
 export function NavTabs() {

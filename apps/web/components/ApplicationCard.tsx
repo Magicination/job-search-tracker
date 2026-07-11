@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Application, ApplicationStatus, ResumeVersion, CoverLetterVersion } from '@job-search-tracker/shared';
+import type { Application, ApplicationStatus, ResumeVersion } from '@job-search-tracker/shared';
 import {
   APPLICATION_STATUS_BADGE_VARIANT,
   APPLICATION_STATUS_LABELS,
@@ -133,7 +133,6 @@ async function handleOpenFile(filePath: string | null) {
 export function ApplicationCard({
   app,
   resumeVersions,
-  coverLetterVersions,
   onUpdate,
   onDateChange,
   onTimeChange,
@@ -142,7 +141,6 @@ export function ApplicationCard({
 }: {
   app: Application;
   resumeVersions: ResumeVersion[];
-  coverLetterVersions: CoverLetterVersion[];
   onUpdate: <K extends keyof Application>(field: K, value: Application[K], debounceMs?: number) => void;
   onDateChange: (newDate: string) => void;
   onTimeChange: (newTime: string) => void;
@@ -152,7 +150,6 @@ export function ApplicationCard({
   const appliedTime = app.applied_at ? new Date(app.applied_at).toTimeString().slice(0, 5) : '';
 
   const selectedResumeVersion = resumeVersions.find((v) => v.id === app.resume_version_id);
-  const selectedCoverLetterVersion = coverLetterVersions.find((v) => v.id === app.cover_letter_version_id);
 
   return (
     <div className="rounded-lg border border-border-soft bg-panel p-4">
@@ -252,32 +249,6 @@ export function ApplicationCard({
             {selectedResumeVersion?.file_path && (
               <button
                 onClick={() => handleOpenFile(selectedResumeVersion.file_path)}
-                title="Открыть файл"
-                className="text-text-faint hover:text-accent-blue"
-              >
-                📎
-              </button>
-            )}
-          </div>
-        </div>
-        <div>
-          <FieldLabel>Версия сопроводительного</FieldLabel>
-          <div className="flex items-center gap-1">
-            <select
-              value={app.cover_letter_version_id ?? ''}
-              onChange={(e) => onUpdate('cover_letter_version_id', e.target.value || null, 0)}
-              className="w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text-dim outline-none focus-visible:border-accent-blue"
-            >
-              <option value="">—</option>
-              {coverLetterVersions.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-            {selectedCoverLetterVersion?.file_path && (
-              <button
-                onClick={() => handleOpenFile(selectedCoverLetterVersion.file_path)}
                 title="Открыть файл"
                 className="text-text-faint hover:text-accent-blue"
               >

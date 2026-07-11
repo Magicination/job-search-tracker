@@ -39,7 +39,7 @@ export default function AddFromBookmarkletPage() {
 
     setSubmitting(false);
     if (result.success) {
-      router.push('/'); // TODO: поправь на роут списка, если он не корневой
+      router.push('/applications');
     } else {
       setError(result.error ?? 'Не удалось создать отклик.');
     }

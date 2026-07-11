@@ -1,118 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  calculateConversionFunnel,
-  calculateFunnelFromHistory,
-  calculateAverageDaysToFirstResponse,
-  calculateConversionByDayOfWeek,
-  calculateConversionByHour,
-  calculateConversionBySource,
-  calculateConversionByResumeVersion,
-  calculateConversionByCoverLetterVersion,
-  type GroupedConversion,
-  type BadgeVariant,
-} from '@job-search-tracker/shared';
+import type { Application, GroupedConversion, BadgeVariant } from '@job-search-tracker/shared';
+import { APPLICATION_STATUS_LABELS, calculateConversionByResumeVersion } from '@job-search-tracker/shared';
 import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics';
 import { SkeletonCard } from '../../components/Skeleton';
 import { HourlyChart } from '../../components/HourlyChart';
-
-/** Сворачиваемая секция-карточка — все блоки аналитики однотипно сворачиваются,
- *  чтобы страница не разрасталась в длинную простыню при большом числе откликов. */
-function CollapsibleSection({
-  title,
-  subtitle,
-  defaultOpen = true,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <div className="rounded-lg border border-border-soft bg-panel p-4">
-      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between gap-2 text-left">
-        <div>
-          <h2 className="text-sm font-medium text-text">{title}</h2>
-          {subtitle && <p className="text-xs text-text-faint">{subtitle}</p>}
-        </div>
-        <span className="shrink-0 text-text-faint">{open ? '▾' : '▸'}</span>
-      </button>
-      {open && <div className="mt-3">{children}</div>}
-    </div>
-  );
-}
-
-// Те же CSS-переменные, что и в Badge.tsx — меняются вместе с темой
-// (.light в globals.css), в отличие от фиксированного hex.
-const VARIANT_TO_CSS_VAR: Record<BadgeVariant, string> = {
-  amber: 'var(--accent-amber)',
-  teal: 'var(--accent-teal)',
-  blue: 'var(--accent-blue)',
-  coral: 'var(--accent-coral)',
-  neutral: 'var(--text-faint)',
-};
-
-function FunnelStage({
-  label,
-  count,
-  percent,
-  variant,
-}: {
-  label: string;
-  count: number;
-  percent: number;
-  variant: BadgeVariant;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-baseline justify-between text-sm">
-        <span className="text-text">{label}</span>
-        <span className="text-text-dim tabular-nums">
-          {count} ({percent}%)
-        </span>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-panel-2">
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${percent}%`, backgroundColor: VARIANT_TO_CSS_VAR[variant] }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function GroupedTableBody({ groups, emptyHint }: { groups: GroupedConversion[]; emptyHint: string }) {
-  if (groups.length === 0) {
-    return <p className="text-sm text-text-faint">{emptyHint}</p>;
-  }
-
-  return (
-    <table className="w-full text-left text-sm">
-      <thead>
-        <tr className="text-xs text-text-dim">
-          <th className="pb-2 font-medium">Группа</th>
-          <th className="pb-2 font-medium">Откликов</th>
-          <th className="pb-2 font-medium">До интервью+</th>
-          <th className="pb-2 font-medium">Конверсия</th>
-        </tr>
-      </thead>
-      <tbody>
-        {groups.map((g) => (
-          <tr key={g.label} className="border-t border-border-soft">
-            <td className="py-1.5 text-text">{g.label}</td>
-            <td className="py-1.5 text-text-dim tabular-nums">{g.total}</td>
-            <td className="py-1.5 text-text-dim tabular-nums">{g.reachedInterviewOrBetter}</td>
-            <td className="py-1.5 tabular-nums text-accent-teal">{g.conversionRate}%</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
 
 export default function AnalyticsPage() {
   const { applications, history, resumeVersions, coverLetterVersions, loading } = useApplicationAnalytics();
@@ -166,30 +59,10 @@ export default function AnalyticsPage() {
       <CollapsibleSection title="Воронка конверсии" subtitle="По истории — учитывает все этапы, через которые прошёл отклик">
         <div className="flex flex-col gap-3">
           <FunnelStage label="Отклик отправлен" count={historyFunnel.applied} percent={100} variant="blue" />
-          <FunnelStage
-            label="Скрининг"
-            count={historyFunnel.screen}
-            percent={pct(historyFunnel.screen)}
-            variant="amber"
-          />
-          <FunnelStage
-            label="Интервью"
-            count={historyFunnel.interview}
-            percent={pct(historyFunnel.interview)}
-            variant="coral"
-          />
-          <FunnelStage
-            label="Оффер"
-            count={historyFunnel.offer}
-            percent={pct(historyFunnel.offer)}
-            variant="teal"
-          />
-          <FunnelStage
-            label="Отказ"
-            count={historyFunnel.rejected}
-            percent={pct(historyFunnel.rejected)}
-            variant="neutral"
-          />
+          <FunnelStage label="Скрининг" count={historyFunnel.screen} percent={pct(historyFunnel.screen)} variant="amber" />
+          <FunnelStage label="Интервью" count={historyFunnel.interview} percent={pct(historyFunnel.interview)} variant="coral" />
+          <FunnelStage label="Оффер" count={historyFunnel.offer} percent={pct(historyFunnel.offer)} variant="teal" />
+          <FunnelStage label="Отказ" count={historyFunnel.rejected} percent={pct(historyFunnel.rejected)} variant="neutral" />
         </div>
         <p className="mt-3 text-xs text-text-faint">
           Текущие статусы прямо сейчас: отправлено {currentFunnel.applied}, скрининг {currentFunnel.screen},
@@ -212,7 +85,7 @@ export default function AnalyticsPage() {
         <HourlyChart data={byHour} />
       </CollapsibleSection>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-1">
         <CollapsibleSection title="По дню недели отклика">
           <GroupedTableBody groups={byDayOfWeek} emptyHint="Нет данных — у старых откликов не сохранено точное время отправки." />
         </CollapsibleSection>

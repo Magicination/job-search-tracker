@@ -129,3 +129,14 @@ export interface SharedResource {
   category: SharedResourceCategory;
   created_at: string;
 }
+
+export interface NotebookEntry {
+  id: string;
+  user_id: string;
+  content: string;
+  url: string | null;
+  file_path: string | null;
+  file_name: string | null;
+  is_shared: boolean;
+  created_at: string;
+}

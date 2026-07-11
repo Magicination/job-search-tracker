@@ -4,6 +4,7 @@ import { useAuth } from '../lib/hooks/useAuth';
 import { useHeaderStats } from '../lib/hooks/useHeaderStats';
 import { ThemeToggle } from './ThemeToggle';
 import { supabase } from '../lib/supabase';
+import { NotebookDrawer } from './NotebookDrawer';
 
 function StatPill({ label, value, accentClass }: { label: string; value: number | string; accentClass: string }) {
   return (
@@ -31,6 +32,7 @@ export function Header() {
           <StatPill label="скрининг" value={screen} accentClass="text-accent-amber" />
           <StatPill label="интервью" value={interview} accentClass="text-accent-coral" />
           <StatPill label="оффер" value={offer} accentClass="text-accent-teal" />
+          <NotebookDrawer />
           <ThemeToggle />
           <button
             onClick={() => supabase.auth.signOut()}

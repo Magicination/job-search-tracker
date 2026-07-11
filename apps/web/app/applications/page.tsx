@@ -1,17 +1,11 @@
-'use client';
-
 import { useState } from 'react';
-import type { Application } from '@job-search-tracker/shared';
-import { APPLICATION_STATUS_BADGE_VARIANT, APPLICATION_STATUS_LABELS } from '@job-search-tracker/shared';
 import { useApplications } from '../../lib/hooks/useApplications';
 import { useResumeVersions } from '../../lib/hooks/useResumeVersions';
-import { useCoverLetterVersions } from '../../lib/hooks/useCoverLetterVersions';
 import { useApplicationFilters } from '../../lib/hooks/useApplicationFilters';
-import { ApplicationCard } from '../../components/ApplicationCard';
+import { KanbanBoard } from '../../components/KanbanBoard';
 import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
 import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
 import { BookmarkletCard } from '../../components/BookmarkletCard';
-import { Badge } from '../../components/Badge';
 import { SkeletonList } from '../../components/Skeleton';
 
 /**
@@ -67,7 +61,6 @@ export default function ApplicationsPage() {
     applications,
     loading,
     addApplication,
-    addApplicationFromFields,
     updateField,
     updateStatus,
     updateAppliedDate,
@@ -76,31 +69,15 @@ export default function ApplicationsPage() {
   } = useApplications();
   const { versions: resumeVersions, addVersion: addResumeVersion, deleteVersion: deleteResumeVersion } =
     useResumeVersions();
-  const {
-    versions: coverLetterVersions,
-    addVersion: addCoverLetterVersion,
-    deleteVersion: deleteCoverLetterVersion,
-  } = useCoverLetterVersions();
 
   const { filters, setFilters, filtered, availableSources, resetFilters, hasActiveFilters } =
     useApplicationFilters(applications);
 
-  // Раскрытые карточки — по id. Новый отклик (через addApplication или
-  // addApplicationFromUrl) добавляется сюда автоматически, см. handleAdd*.
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-
-  function toggleExpanded(id: string) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  const [autoOpenId, setAutoOpenId] = useState<string | null>(null);
 
   async function handleAddEmpty() {
     const newId = await addApplication();
-    if (newId) setExpandedIds((prev) => new Set(prev).add(newId));
+    if (newId) setAutoOpenId(newId);
   }
 
   return (
@@ -125,23 +102,13 @@ export default function ApplicationsPage() {
         <BookmarkletCard />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <DocumentVersionsPanel
-          title="Версии резюме"
-          emptyHint="Создайте версию, если планируете тестировать разные варианты резюме — потом на странице «Аналитика» будет видно, какая версия даёт лучшую конверсию."
-          versions={resumeVersions}
-          onAdd={addResumeVersion}
-          onDelete={deleteResumeVersion}
-        />
-        <DocumentVersionsPanel
-          title="Версии сопроводительного письма"
-          emptyHint="Создайте версию, если планируете тестировать разные варианты сопроводительного письма."
-          versions={coverLetterVersions}
-          onAdd={addCoverLetterVersion}
-          onDelete={deleteCoverLetterVersion}
-          showTextField
-        />
-      </div>
+      <DocumentVersionsPanel
+        title="Версии резюме"
+        emptyHint="Создайте версию, если планируете тестировать разные варианты резюме — потом на странице «Аналитика» будет видно, какая версия даёт лучшую конверсию."
+        versions={resumeVersions}
+        onAdd={addResumeVersion}
+        onDelete={deleteResumeVersion}
+      />
 
       {!loading && applications.length > 0 && (
         <ApplicationFiltersBar
@@ -165,34 +132,17 @@ export default function ApplicationsPage() {
           Ничего не найдено по текущим фильтрам — попробуйте изменить условия поиска.
         </p>
       ) : (
-        <div className="flex flex-col gap-2">
-          {filtered.map((app) => (
-            <CollapsibleApplicationRow
-              key={app.id}
-              app={app}
-              expanded={expandedIds.has(app.id)}
-              onToggle={() => toggleExpanded(app.id)}
-            >
-              <ApplicationCard
-                app={app}
-                resumeVersions={resumeVersions}
-                coverLetterVersions={coverLetterVersions}
-                onUpdate={(field, value, debounceMs) => updateField(app.id, field, value, debounceMs)}
-                onDateChange={(newDate) => updateAppliedDate(app.id, newDate)}
-                onTimeChange={(newTime) => updateAppliedTime(app.id, newTime)}
-                onStatusChange={(status) => updateStatus(app.id, status)}
-                onDelete={() => {
-                  deleteApplication(app.id);
-                  setExpandedIds((prev) => {
-                    const next = new Set(prev);
-                    next.delete(app.id);
-                    return next;
-                  });
-                }}
-              />
-            </CollapsibleApplicationRow>
-          ))}
-        </div>
+        <KanbanBoard
+          applications={filtered}
+          resumeVersions={resumeVersions}
+          onUpdate={(id, field, value, debounceMs) => updateField(id, field as any, value, debounceMs)}
+          onDateChange={updateAppliedDate}
+          onTimeChange={updateAppliedTime}
+          onStatusChange={updateStatus}
+          onDelete={deleteApplication}
+          autoOpenId={autoOpenId}
+          onAutoOpenHandled={() => setAutoOpenId(null)}
+        />
       )}
     </div>
   );
