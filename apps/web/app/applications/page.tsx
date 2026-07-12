@@ -10,13 +10,6 @@ import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
 import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
 import { BookmarkletCard } from '../../components/BookmarkletCard';
 import { SkeletonList } from '../../components/Skeleton';
-import { useResumeVersions } from '../../lib/hooks/useResumeVersions';
-import { useApplicationFilters } from '../../lib/hooks/useApplicationFilters';
-import { KanbanBoard } from '../../components/KanbanBoard';
-import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
-import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
-import { BookmarkletCard } from '../../components/BookmarkletCard';
-import { SkeletonList } from '../../components/Skeleton';
 
 /** @type definitions and exports are handled by the main component */
 export default function ApplicationsPage() {
