@@ -121,7 +121,6 @@ export function NotebookDrawer() {
                             {n.url}
                           </a>
                         )}
-                        )}
                         {n.file_path && (
                           <button
                             onClick={() => handleOpenFile(n.file_path)}
