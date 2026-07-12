@@ -47,14 +47,14 @@ export function BookmarkletCard() {
         </li>
       </ol>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        
-          href={code || '#'}
-          onClick={(e) => e.preventDefault()}
-          draggable={!!code}
-          className="cursor-grab select-none rounded-lg bg-accent-amber px-4 py-2 text-sm font-semibold text-bg active:cursor-grabbing"
-          title="Перетащите на панель закладок браузера"
+        <a
+        href={code || '#'}
+        onClick={(e) => e.preventDefault()}
+        draggable={!!code}
+        className="cursor-grab select-none rounded-lg bg-accent-amber px-4 py-2 text-sm font-semibold text-bg active:cursor-grabbing"
+        title="Перетащите на панель закладок браузера"
         >
-          📌 Добавить в Job Tracker
+        📌 Добавить в Job Tracker
         </a>
         <button
           onClick={handleCopy}

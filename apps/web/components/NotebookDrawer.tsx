@@ -112,7 +112,7 @@ export function NotebookDrawer() {
                       <div className="min-w-0 flex-1">
                         {n.content && <p className="whitespace-pre-wrap text-sm text-text">{n.content}</p>}
                         {n.url && (
-
+                          <a
                             href={n.url}
                             target="_blank"
                             rel="noopener noreferrer"

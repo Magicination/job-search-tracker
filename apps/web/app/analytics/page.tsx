@@ -2,7 +2,16 @@
 
 import { useState } from 'react';
 import type { Application, GroupedConversion, BadgeVariant } from '@job-search-tracker/shared';
-import { APPLICATION_STATUS_LABELS, calculateConversionByResumeVersion } from '@job-search-tracker/shared';
+import {
+  APPLICATION_STATUS_LABELS,
+  calculateConversionByResumeVersion,
+  calculateConversionFunnel,
+  calculateFunnelFromHistory,
+  calculateAverageDaysToFirstResponse,
+  calculateConversionByDayOfWeek,
+  calculateConversionByHour,
+  calculateConversionBySource,
+} from '@job-search-tracker/shared';
 import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics';
 import { SkeletonCard } from '../../components/Skeleton';
 import { HourlyChart } from '../../components/HourlyChart';
