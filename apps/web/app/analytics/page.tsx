@@ -16,6 +16,85 @@ import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics
 import { SkeletonCard } from '../../components/Skeleton';
 import { HourlyChart } from '../../components/HourlyChart';
 
+function CollapsibleSection({
+ title,
+ subtitle,
+ children,
+}: {
+ title: string;
+ subtitle?: string;
+ children: React.ReactNode;
+}) {
+ const [expanded, setExpanded] = useState(true);
+ return (
+ <div className="rounded-lg border border-border-soft bg-panel p-4">
+ <button
+ onClick={() => setExpanded((e) => !e)}
+ className="flex w-full items-center justify-between text-left"
+ >
+ <div>
+ <h2 className="text-sm font-semibold text-text">{title}</h2>
+ {subtitle && <p className="mt-0.5 text-xs text-text-faint">{subtitle}</p>}
+ </div>
+ <span className="text-text-faint">{expanded ? '▾' : '▸'}</span>
+ </button>
+ {expanded && <div className="mt-3">{children}</div>}
+ </div>
+ );
+}
+
+const FUNNEL_BAR_CLASS: Record<BadgeVariant, string> = {
+ blue: 'bg-accent-blue',
+ amber: 'bg-accent-amber',
+ coral: 'bg-accent-coral',
+ teal: 'bg-accent-teal',
+ neutral: 'bg-text-faint',
+};
+
+function FunnelStage({
+ label,
+ count,
+ percent,
+ variant,
+}: {
+ label: string;
+ count: number;
+ percent: number;
+ variant: BadgeVariant;
+}) {
+ return (
+ <div>
+ <div className="flex items-center justify-between text-xs text-text-dim">
+ <span>{label}</span>
+ <span className="tabular-nums">
+ {count} · {percent}%
+ </span>
+ </div>
+ <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-panel-2">
+ <div className={`h-full rounded-full ${FUNNEL_BAR_CLASS[variant]}`} style={{ width: `${percent}%` }} />
+ </div>
+ </div>
+ );
+}
+
+function GroupedTableBody({ groups, emptyHint }: { groups: GroupedConversion[]; emptyHint: string }) {
+ if (groups.length === 0) {
+ return <p className="text-xs text-text-faint">{emptyHint}</p>;
+ }
+ return (
+ <div className="flex flex-col gap-1.5">
+ {groups.map((g) => (
+ <div key={g.label} className="flex items-center justify-between text-sm">
+ <span className="text-text-dim">{g.label}</span>
+ <span className="tabular-nums text-text-faint">
+ {g.reachedInterviewOrBetter}/{g.total} · {g.conversionRate}%
+ </span>
+ </div>
+ ))}
+ </div>
+ );
+}
+
 export default function AnalyticsPage() {
   const { applications, history, resumeVersions, loading } = useApplicationAnalytics();
 
