@@ -4,7 +4,7 @@ import { useAuth } from '../lib/hooks/useAuth';
 import { useHeaderStats } from '../lib/hooks/useHeaderStats';
 import { ThemeToggle } from './ThemeToggle';
 import { supabase } from '../lib/supabase';
-import { NotebookDrawer } from './NotebookDrawer';
+import { NotebookDrawerPortal } from './NotebookDrawerPortal';
 
 function StatPill({ label, value, accentClass }: { label: string; value: number | string; accentClass: string }) {
   return (
@@ -23,7 +23,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-bg/95 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 overflow-hidden">
         <div className="flex items-center gap-2 min-w-0">
           <span className="truncate text-sm text-text-dim">{user.email}</span>
         </div>
@@ -32,7 +32,9 @@ export function Header() {
           <StatPill label="скрининг" value={screen} accentClass="text-accent-amber" />
           <StatPill label="интервью" value={interview} accentClass="text-accent-coral" />
           <StatPill label="оффер" value={offer} accentClass="text-accent-teal" />
-          <NotebookDrawer />
+          <div className="relative"> {/* Портал-контейнер */}
+            <NotebookDrawerWithPortal />
+          </div>
           <ThemeToggle />
           <button
             onClick={() => supabase.auth.signOut()}

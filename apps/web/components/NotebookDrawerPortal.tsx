@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotes } from '../lib/hooks/useNotes';
 import { getDocumentDownloadUrl } from '../lib/documentStorage';
@@ -21,11 +21,10 @@ async function handleOpenFile(filePath: string | null) {
 }
 
 /**
- * Блокнот-drawer: не занимает места на странице, открывается по кнопке.
- * Личные записи — всегда свои; is_shared делает запись видимой остальным
- * (замена прежнего отдельного раздела "Ресурсы и ссылки").
+ * Портал-компонент блокнота. Управляется через createPortal.
+ * Фиксированный z-index=50, без transition, overflow: visible.
  */
-export function NotebookDrawer(containerRef: React.RefObject<HTMLElement | null>) {
+export function NotebookDrawerPortal() {
   const [open, setOpen] = useState(false);
   const { notes, loading, addNote, toggleShared, deleteNote, currentUserId } = useNotes();
 
@@ -66,9 +65,9 @@ export function NotebookDrawer(containerRef: React.RefObject<HTMLElement | null>
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-[100] flex justify-end bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)}>
           <div
-            className="flex h-full w-full max-w-sm flex-col gap-3 overflow-y-auto border-l border-border bg-bg p-4"
+            className="flex h-full w-full max-w-xs flex-col gap-3 overflow-y-auto border-l border-border bg-bg p-4 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
