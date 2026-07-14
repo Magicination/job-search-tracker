@@ -11,7 +11,7 @@ import {
 import { Badge } from './Badge';
 import { getDocumentDownloadUrl } from '../lib/documentStorage';
 
-const STATUS_OPTIONS: ApplicationStatus[] = ['applied', 'screen', 'interview', 'offer', 'rejected'];
+const STATUS_OPTIONS: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
 
 /** Грубая проверка "похоже на URL" — без строгой валидации, просто чтобы решить, рисовать ли ссылку. */
 function looksLikeUrl(text: string): boolean {
@@ -152,8 +152,8 @@ export function ApplicationCard({
   const selectedResumeVersion = resumeVersions.find((v) => v.id === app.resume_version_id);
 
   return (
-    <div className="rounded-lg border border-border-soft bg-panel p-4">
-      <div className="mb-3 flex items-start justify-between gap-2">
+    <div className="rounded-lg border border-border-soft bg-panel p-3 max-w-md overflow-y-auto">
+      <div className="mb-2 flex items-start justify-between gap-2">
         <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
           <div>
             <FieldLabel>Компания</FieldLabel>
@@ -171,13 +171,13 @@ export function ApplicationCard({
             }
           }}
           aria-label="Удалить отклик"
-          className="mt-5 shrink-0 text-text-faint hover:text-accent-coral"
+          className="mt-2 shrink-0 text-text-faint hover:text-accent-coral sm:mt-0"
         >
           ✕
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-2">
         <div>
           <FieldLabel>Источник</FieldLabel>
           <SelectOrCustomField
