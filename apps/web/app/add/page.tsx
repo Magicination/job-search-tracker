@@ -46,7 +46,7 @@ export default function AddFromBookmarkletPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4 p-4">
+    <div className="mx-auto flex max-w-lg flex-col gap-4 p-4 max-h-[90vh] overflow-y-auto">
       <h1 className="text-lg font-semibold text-text">Новый отклик из hh.ru</h1>
       {!company && !role && (
         <p className="text-sm text-accent-coral">

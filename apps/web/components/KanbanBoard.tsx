@@ -7,7 +7,7 @@ import { KanbanCard } from './KanbanCard';
 import { Modal } from './Modal';
 import { ApplicationCard } from './ApplicationCard';
 
-const STATUS_ORDER: ApplicationStatus[] = ['applied', 'screen', 'interview', 'offer', 'rejected'];
+const STATUS_ORDER: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
 
 export function KanbanBoard({
   applications, resumeVersions, onUpdate, onDateChange, onTimeChange, onStatusChange, onDelete, autoOpenId, onAutoOpenHandled,

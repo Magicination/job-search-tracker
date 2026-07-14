@@ -38,7 +38,6 @@ export const SLOT_TYPE_COLORS = {
 // Цвет по статусу отклика — см. 02-screens-web.md, раздел /applications.
 export const APPLICATION_STATUS_COLORS = {
   applied: COLORS.accentBlue,
-  screen: COLORS.accentAmber,
   interview: COLORS.accentCoral,
   offer: COLORS.accentTeal,
   rejected: COLORS.textFaint,
@@ -69,11 +68,10 @@ export const SLOT_TYPE_BADGE_VARIANT: Record<
 };
 
 export const APPLICATION_STATUS_BADGE_VARIANT: Record<
-  'applied' | 'screen' | 'interview' | 'offer' | 'rejected',
+  'applied' | 'interview' | 'offer' | 'rejected',
   BadgeVariant
 > = {
   applied: 'blue',
-  screen: 'amber',
   interview: 'coral',
   offer: 'teal',
   rejected: 'neutral',
@@ -95,11 +93,10 @@ export const SLOT_TYPE_LABELS = {
 } as const;
 
 export const APPLICATION_STATUS_LABELS = {
-  applied: 'Отклик отправлен',
-  screen: 'Скрининг',
-  interview: 'Собеседование',
+  applied: 'Отправлен',
+  interview: 'Интервью',
   offer: 'Оффер',
-  rejected: 'Отказ',
+  rejected: 'Отклонён',
 } as const;
 
 export const DAY_OF_WEEK_LABELS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const;

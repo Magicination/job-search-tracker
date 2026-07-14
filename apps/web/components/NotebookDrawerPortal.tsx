@@ -131,12 +131,28 @@ export function NotebookDrawerPortal() {
                           </a>
                         )}
                         {n.file_path && (
-                          <button
-                            onClick={() => handleOpenFile(n.file_path)}
-                            className="mt-1 block text-xs text-accent-blue hover:underline"
-                          >
-                            📎 {n.file_name || 'файл'}
-                          </button>
+                          <div className="mt-2 flex items-center justify-between rounded border border-border bg-panel-2 p-2">
+                            <span className="text-sm font-medium text-text">{n.file_name}</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleOpenFile(n.file_path)}
+                                className="rounded border border-border px-2 py-1 text-xs hover:border-border-soft"
+                                title="Открыть файл"
+                              >
+                                Открыть
+                              </button>
+                              <a
+                                href={await getDocumentDownloadUrl(n.file_path)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded border border-border px-2 py-1 text-xs hover:border-border-soft"
+                                download
+                                title="Скачать файл"
+                              >
+                                Скачать
+                              </a>
+                            </div>
+                          </div>
                         )}
                       </div>
                       {n.user_id === currentUserId && (

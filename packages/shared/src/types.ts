@@ -32,7 +32,6 @@ export interface ScheduleSlot {
 
 export type ApplicationStatus =
   | 'applied'
-  | 'screen'
   | 'interview'
   | 'offer'
   | 'rejected';

@@ -38,13 +38,19 @@ export default function ApplicationsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      {/* Fixed header button for adding new application */}
+      <div className="flex justify-between items-center">
         <h1 className="text-lg font-semibold text-text">Отклики</h1>
+        <button
+          onClick={handleAddEmpty}
+          className="shrink-0 rounded-lg bg-accent-amber px-4 py-1.5 text-sm font-semibold text-bg transition hover:opacity-90"
+          title="Добавить новый отклик"
+        >
+          + Новый отклик
+        </button>
       </div>
 
-      {/* Главное действие страницы — крупная кнопка по центру блока создания,
-          а не мелкая ссылка в углу, чтобы новый пользователь сразу понимал,
-          с чего начать. */}
+      {/* Main actions area */}
       <div className="flex flex-col gap-3 rounded-lg border border-accent-amber/30 bg-panel p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-text-dim">Добавьте отклик вручную или автоматически через букмарклет.</p>
