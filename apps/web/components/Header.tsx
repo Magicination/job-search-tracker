@@ -32,9 +32,7 @@ export function Header() {
           <StatPill label="скрининг" value={screen} accentClass="text-accent-amber" />
           <StatPill label="интервью" value={interview} accentClass="text-accent-coral" />
           <StatPill label="оффер" value={offer} accentClass="text-accent-teal" />
-          <div className="relative"> {/* Портал-контейнер */}
-            <NotebookDrawerWithPortal />
-          </div>
+          <NotebookDrawerPortal />
           <ThemeToggle />
           <button
             onClick={() => supabase.auth.signOut()}

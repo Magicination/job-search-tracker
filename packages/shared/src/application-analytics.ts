@@ -280,14 +280,3 @@ export function calculateConversionByResumeVersion(
     app.resume_version_id ? versionNameById.get(app.resume_version_id) ?? null : null
   );
 }
-
-/** Конверсия по использованной версии сопроводительного письма. Без версии — пропускается. */
-export function calculateConversionByCoverLetterVersion(
-  applications: Application[],
-  history: ApplicationStatusHistoryEntry[],
-  versionNameById: Map<string, string>
-): GroupedConversion[] {
-  return buildGroupedConversion(applications, history, (app) =>
-    app.cover_letter_version_id ? versionNameById.get(app.cover_letter_version_id) ?? null : null
-  );
-}

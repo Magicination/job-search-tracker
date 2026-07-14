@@ -165,7 +165,11 @@ export function ApplicationCard({
           </div>
         </div>
         <button
-          onClick={onDelete}
+          onClick={() => {
+            if (window.confirm(`Удалить отклик «${app.company || app.role || 'без названия'}»? Это нельзя отменить.`)) {
+              onDelete();
+            }
+          }}
           aria-label="Удалить отклик"
           className="mt-5 shrink-0 text-text-faint hover:text-accent-coral"
         >

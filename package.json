@@ -15,5 +15,8 @@
   },
   "devDependencies": {
     "supabase": "^2.107.0"
+  },
+  "dependencies": {
+    "job-search-tracker": "file:"
   }
 }

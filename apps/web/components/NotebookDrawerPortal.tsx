@@ -64,7 +64,7 @@ export function NotebookDrawerPortal() {
         📒 Блокнот
       </button>
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[100] flex justify-end bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)}>
           <div
             className="flex h-full w-full max-w-xs flex-col gap-3 overflow-y-auto border-l border-border bg-bg p-4 shadow-lg"
@@ -164,7 +164,8 @@ export function NotebookDrawerPortal() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
