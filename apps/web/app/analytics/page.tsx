@@ -16,6 +16,18 @@ import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics
 import { SkeletonCard } from '../../components/Skeleton';
 import { HourlyChart } from '../../components/HourlyChart';
 
+type Period = 'week' | 'month' | 'year' | 'all';
+const PERIOD_LABELS: Record<Period, string> = { week: 'Неделя', month: 'Месяц', year: 'Год', all: 'Всё время' };
+function getPeriodCutoff(period: Period): Date | null {
+  if (period === 'all') return null;
+  const now = new Date();
+  const cutoff = new Date(now);
+  if (period === 'week') cutoff.setDate(now.getDate() - 7);
+  if (period === 'month') cutoff.setMonth(now.getMonth() - 1);
+  if (period === 'year') cutoff.setFullYear(now.getFullYear() - 1);
+  return cutoff;
+}
+
 function CollapsibleSection({
  title,
  subtitle,
@@ -98,6 +110,12 @@ function GroupedTableBody({ groups, emptyHint }: { groups: GroupedConversion[]; 
 export default function AnalyticsPage() {
   const { applications, history, resumeVersions, loading } = useApplicationAnalytics();
 
+  const [period, setPeriod] = useState<Period>('all');
+  const cutoff = getPeriodCutoff(period);
+  const periodApplications = cutoff ? applications.filter((a) => a.applied_date && new Date(a.applied_date) >= cutoff) : applications;
+  const periodIds = new Set(periodApplications.map((a) => a.id));
+  const periodHistory = cutoff ? history.filter((h) => periodIds.has(h.application_id)) : history;
+
   if (loading) {
     return (
       <div className="flex flex-col gap-6">
@@ -124,15 +142,15 @@ export default function AnalyticsPage() {
     );
   }
 
-  const currentFunnel = calculateConversionFunnel(applications);
-  const historyFunnel = calculateFunnelFromHistory(history);
-  const avgDays = calculateAverageDaysToFirstResponse(history);
-  const byDayOfWeek = calculateConversionByDayOfWeek(applications, history);
-  const byHour = calculateConversionByHour(applications, history);
-  const bySource = calculateConversionBySource(applications, history);
+  const currentFunnel = calculateConversionFunnel(periodApplications);
+  const historyFunnel = calculateFunnelFromHistory(periodHistory);
+  const avgDays = calculateAverageDaysToFirstResponse(periodHistory);
+  const byDayOfWeek = calculateConversionByDayOfWeek(periodApplications, periodHistory);
+  const byHour = calculateConversionByHour(periodApplications, periodHistory);
+  const bySource = calculateConversionBySource(periodApplications, periodHistory);
 
   const resumeNameById = new Map(resumeVersions.map((v) => [v.id, v.name]));
-  const byResumeVersion = calculateConversionByResumeVersion(applications, history, resumeNameById);
+  const byResumeVersion = calculateConversionByResumeVersion(periodApplications, periodHistory, resumeNameById);
 
   const pct = (count: number) =>
     historyFunnel.applied ? Math.round((count / historyFunnel.applied) * 100) : 0;
@@ -140,6 +158,23 @@ export default function AnalyticsPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-lg font-semibold text-text">Аналитика</h1>
+
+      <div className="flex flex-wrap gap-2">
+        {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            className={`rounded-lg border px-3 py-1.5 text-xs transition ${
+              period === p ? 'border-accent-amber bg-accent-amber/10 text-text' : 'border-border text-text-dim hover:border-border-soft'
+            }`}
+          >
+            {PERIOD_LABELS[p]}
+          </button>
+        ))}
+      </div>
+      {periodApplications.length === 0 && (
+        <p className="text-sm text-text-dim">За выбранный период откликов нет — выберите другой период или «Всё время».</p>
+      )}
 
       <CollapsibleSection title="Воронка конверсии" subtitle="По истории — учитывает все этапы, через которые прошёл отклик">
         <div className="flex flex-col gap-3">

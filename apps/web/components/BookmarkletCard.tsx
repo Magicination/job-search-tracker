@@ -20,6 +20,7 @@ function buildBookmarkletCode(appUrl: string): string {
 export function BookmarkletCard() {
   const [copied, setCopied] = useState(false);
   const [code, setCode] = useState('');
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     setCode(buildBookmarkletCode(window.location.origin));
@@ -31,8 +32,12 @@ export function BookmarkletCard() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function toggleCollapse() {
+    setCollapsed((c) => !c);
+  }
+
   return (
-    <div className="rounded-lg border border-border-soft bg-panel p-3">
+    <div className={`rounded-lg border border-border-soft bg-panel p-3 transition ${collapsed ? 'opacity-50' : ''}`}>
       <p className="text-sm text-text-dim">Автозаполнение отклика по ссылке на hh.ru — в 3 шага:</p>
       <ol className="mt-2 flex flex-col gap-1 text-sm text-text-dim">
         <li>
@@ -62,6 +67,12 @@ export function BookmarkletCard() {
           className="rounded-lg border border-border px-3 py-2 text-xs text-text-dim hover:border-border-soft disabled:opacity-50"
         >
           {copied ? 'Скопировано!' : 'Скопировать код (если панель закладок скрыта)'}
+        </button>
+        <button
+          onClick={toggleCollapse}
+          className="rounded-lg border border-border px-3 py-2 text-xs text-text-dim hover:border-border-soft"
+        >
+          {collapsed ? 'Развернуть' : 'Свернуть'}
         </button>
       </div>
     </div>
