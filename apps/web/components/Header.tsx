@@ -17,7 +17,7 @@ function StatPill({ label, value, accentClass }: { label: string; value: number 
 
 export function Header() {
   const { user } = useAuth();
-  const { applied, screen, interview, offer } = useHeaderStats();
+  const { applied, interview, offer } = useHeaderStats();
 
   if (!user) return null;
 
@@ -29,7 +29,6 @@ export function Header() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <StatPill label="отправлено" value={applied} accentClass="text-accent-blue" />
-          <StatPill label="скрининг" value={screen} accentClass="text-accent-amber" />
           <StatPill label="интервью" value={interview} accentClass="text-accent-coral" />
           <StatPill label="оффер" value={offer} accentClass="text-accent-teal" />
           <NotebookDrawerPortal />

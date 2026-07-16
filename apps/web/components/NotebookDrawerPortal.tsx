@@ -16,8 +16,13 @@ function formatDateTime(iso: string): string {
 
 async function handleOpenFile(filePath: string | null) {
   if (!filePath) return;
+  const newWindow = window.open('', '_blank', 'noopener,noreferrer');
   const url = await getDocumentDownloadUrl(filePath);
-  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  if (url && newWindow) {
+    newWindow.location.href = url;
+  } else {
+    newWindow?.close();
+  }
 }
 
 /**
@@ -152,7 +157,8 @@ export function NotebookDrawerPortal() {
                                 Скачать
                               </a>
                             </div>
-                          </div>
+                          </div>,
+                          document.body
                         )}
                       </div>
                       {n.user_id === currentUserId && (

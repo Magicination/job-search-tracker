@@ -4,7 +4,7 @@ import type { ApplicationFilters } from '../lib/hooks/useApplicationFilters';
 import type { ApplicationStatus } from '@job-search-tracker/shared';
 import { APPLICATION_STATUS_LABELS } from '@job-search-tracker/shared';
 
-const STATUS_OPTIONS: ApplicationStatus[] = ['applied', 'screen', 'interview', 'offer', 'rejected'];
+const STATUS_OPTIONS: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
 
 export function ApplicationFiltersBar({
   filters,

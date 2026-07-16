@@ -179,14 +179,13 @@ export default function AnalyticsPage() {
       <CollapsibleSection title="Воронка конверсии" subtitle="По истории — учитывает все этапы, через которые прошёл отклик">
         <div className="flex flex-col gap-3">
           <FunnelStage label="Отклик отправлен" count={historyFunnel.applied} percent={100} variant="blue" />
-          <FunnelStage label="Скрининг" count={historyFunnel.screen} percent={pct(historyFunnel.screen)} variant="amber" />
           <FunnelStage label="Интервью" count={historyFunnel.interview} percent={pct(historyFunnel.interview)} variant="coral" />
           <FunnelStage label="Оффер" count={historyFunnel.offer} percent={pct(historyFunnel.offer)} variant="teal" />
           <FunnelStage label="Отказ" count={historyFunnel.rejected} percent={pct(historyFunnel.rejected)} variant="neutral" />
         </div>
         <p className="mt-3 text-xs text-text-faint">
-          Текущие статусы прямо сейчас: отправлено {currentFunnel.applied}, скрининг {currentFunnel.screen},
-          интервью {currentFunnel.interview}, оффер {currentFunnel.offer}, отказ {currentFunnel.rejected}.
+          Текущие статусы прямо сейчас: отправлено {currentFunnel.applied}, интервью {currentFunnel.interview},
+          оффер {currentFunnel.offer}, отказ {currentFunnel.rejected}.
         </p>
       </CollapsibleSection>
 
@@ -196,7 +195,7 @@ export default function AnalyticsPage() {
         </p>
         <p className="mt-1 text-xs text-text-faint">
           {avgDays !== null
-            ? 'От момента отклика до первого изменения статуса (скрининг, интервью или отказ).'
+            ? 'От момента отклика до первого изменения статуса (интервью или отказ).'
             : 'Пока нет ни одного отклика с изменённым статусом — данных недостаточно.'}
         </p>
       </CollapsibleSection>
