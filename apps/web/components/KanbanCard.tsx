@@ -2,7 +2,7 @@
 
 import type { Application, ApplicationStatus } from '@job-search-tracker/shared';
 
-const STATUS_ORDER: ApplicationStatus[] = ['applied', 'screen', 'interview', 'offer', 'rejected'];
+const STATUS_ORDER: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
 
 export function KanbanCard({
   app,

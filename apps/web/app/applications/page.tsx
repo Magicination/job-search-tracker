@@ -51,9 +51,10 @@ export default function ApplicationsPage() {
       </div>
 
       {/* Main actions area */}
-      <div className="flex flex-col gap-3 rounded-lg border border-accent-amber/30 bg-panel p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-text-dim">Добавьте отклик вручную или автоматически через букмарклет.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-text-dim">Добавьте отклик вручную или автоматически через букмарклет.</p>
+        <div className="flex flex-wrap gap-2">
+          <BookmarkletCard />
           <button
             onClick={handleAddEmpty}
             className="shrink-0 rounded-lg bg-accent-amber px-5 py-2.5 text-sm font-semibold text-bg transition hover:opacity-90"
@@ -61,7 +62,6 @@ export default function ApplicationsPage() {
             + Новый отклик
           </button>
         </div>
-        <BookmarkletCard />
       </div>
 
       <DocumentVersionsPanel

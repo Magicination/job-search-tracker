@@ -14,12 +14,9 @@ import type { Application, ApplicationStatus, ApplicationStatusHistoryEntry } fr
 
 export interface ConversionFunnel {
   applied: number;
-  screen: number;
   interview: number;
   offer: number;
   rejected: number;
-  /** % от applied, кто хотя бы раз дошёл до screen (включая тех, кто потом отклонён) */
-  screenRate: number;
   /** % от applied, кто хотя бы раз дошёл до interview */
   interviewRate: number;
   /** % от applied, кто получил offer */
@@ -36,7 +33,6 @@ export function calculateConversionFunnel(applications: Application[]): Conversi
   const total = applications.length;
   const counts: Record<ApplicationStatus, number> = {
     applied: 0,
-    screen: 0,
     interview: 0,
     offer: 0,
     rejected: 0,
@@ -49,7 +45,6 @@ export function calculateConversionFunnel(applications: Application[]): Conversi
 
   return {
     ...counts,
-    screenRate: pct(counts.screen + counts.interview + counts.offer),
     interviewRate: pct(counts.interview + counts.offer),
     offerRate: pct(counts.offer),
   };
@@ -76,7 +71,6 @@ export function calculateFunnelFromHistory(
 
   const counts: Record<ApplicationStatus, number> = {
     applied: 0,
-    screen: 0,
     interview: 0,
     offer: 0,
     rejected: 0,
@@ -104,13 +98,12 @@ export function calculateFunnelFromHistory(
  */
 export interface HeaderStatusCounts {
   applied: number;
-  screen: number;
   interview: number;
   offer: number;
 }
 
 export function calculateHeaderStatusCounts(applications: Application[]): HeaderStatusCounts {
-  const counts: HeaderStatusCounts = { applied: 0, screen: 0, interview: 0, offer: 0 };
+  const counts: HeaderStatusCounts = { applied: 0, interview: 0, offer: 0 };
   for (const app of applications) {
     if (app.status in counts) {
       counts[app.status as keyof HeaderStatusCounts] += 1;

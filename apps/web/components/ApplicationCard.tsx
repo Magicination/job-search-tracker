@@ -126,8 +126,13 @@ function NoteField({ value, onChange }: { value: string; onChange: (v: string) =
 
 async function handleOpenFile(filePath: string | null) {
   if (!filePath) return;
+  const newWindow = window.open('', '_blank', 'noopener,noreferrer');
   const url = await getDocumentDownloadUrl(filePath);
-  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  if (url && newWindow) {
+    newWindow.location.href = url;
+  } else {
+    newWindow?.close();
+  }
 }
 
 export function ApplicationCard({
@@ -202,7 +207,7 @@ export function ApplicationCard({
             type="time"
             value={appliedTime}
             onChange={(e) => onTimeChange(e.target.value)}
-            className="w-full rounded-md border border-border bg-panel-2 px-3 py-2.5 text-base text-text outline-none focus-visible:border-accent-blue [&::-webkit-calendar-picker-indicator]:opacity-70"
+            className="w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text outline-none focus-visible:border-accent-blue [&::-webkit-calendar-picker-indicator]:opacity-70"
           />
         </div>
         <div>
@@ -221,7 +226,7 @@ export function ApplicationCard({
         </div>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mt-2 grid grid-cols-2 gap-2">
         <div>
           <FieldLabel>Зарплата</FieldLabel>
           <TextField value={app.salary} onChange={(v) => onUpdate('salary', v)} placeholder="напр. 150-200к ₽" />
