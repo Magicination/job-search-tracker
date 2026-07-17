@@ -1,18 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useApplications } from '../../lib/hooks/useApplications';
-
-/**
- * Принимает данные от букмарклета (components/BookmarkletCard.tsx) через
- * query-параметры: company, role, salary, experience, url. Поля
- * редактируемые — разметка hh.ru может измениться или дать неполные данные.
- */
+import { supabase } from '../../lib/supabase';
+import type { Application } from '@job-search-tracker/shared';
+import { getTodayLocal } from '@job-search-tracker/shared';
 export default function AddFromBookmarkletPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { addApplicationFromFields } = useApplications();
+
+  // Загружаем приложения для проверки дубликатов
+  const [applications, setApplications] = useState<Application[]>([]);
+  useEffect(() => {
+    const fetchApplications = async () => {
+      const { data, error } = await supabase
+        .from('applications')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setApplications(data as Application[]);
+      }
+    };
+    fetchApplications();
+  }, []);
 
   const initialUrl = searchParams.get('url') ?? '';
   const [company, setCompany] = useState(searchParams.get('company') ?? '');
@@ -36,7 +46,6 @@ export default function AddFromBookmarkletPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // Проверка на дубликаты
     if (duplicate) {
       const proceed = window.confirm(
         `Похоже, такой отклик уже есть (добавлен ${new Date(duplicate.created_at).toLocaleDateString('ru-RU')}). Всё равно создать ещё один?`
@@ -47,20 +56,39 @@ export default function AddFromBookmarkletPage() {
     setSubmitting(true);
     setError(null);
 
-    const result = await addApplicationFromFields({
-      company,
-      role,
-      salary,
-      experience_required: experience,
-      source: url.includes('hh.') ? 'hh.ru' : '',
-      vacancy_url: url,
-    });
+    // Получаем user_id через auth
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) {
+      setError('Вы не авторизованы. Пожалуйста, войдите в аккаунт.');
+      setSubmitting(false);
+      return;
+    }
+
+    // Создаем отклик через supabase напрямую
+    const now = new Date().toISOString();
+    const { data: created, error } = await supabase
+      .from('applications')
+      .insert({
+        user_id: authData.user.id,
+        company,
+        role,
+        source: url.includes('hh.') ? 'hh.ru' : '',
+        applied_date: getTodayLocal(),
+        applied_at: now,
+        status: 'applied',
+        note: '',
+        salary,
+        experience_required: experience,
+        vacancy_url: url,
+      })
+      .select()
+      .single();
 
     setSubmitting(false);
-    if (result.success) {
-      router.push('/applications');
+    if (error || !created) {
+      setError('Не удалось создать отклик. Попробуйте ещё раз.');
     } else {
-      setError(result.error ?? 'Не удалось создать отклик.');
+      router.push('/applications');
     }
   }
 
