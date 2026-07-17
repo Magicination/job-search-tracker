@@ -2,8 +2,9 @@
 node_modules/
 .npm/
 
-# pnpm (будут игнорироваться)
+# pnpm/yarn (будут игнорироваться — не используем в этом проекте)
 pnpm-lock.yaml
+yarn.lock
 pnpm-workspace.yaml
 
 # Next.js

@@ -10,6 +10,7 @@ import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
 import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
 import { BookmarkletCard } from '../../components/BookmarkletCard';
 import { SkeletonList } from '../../components/Skeleton';
+import { exportApplicationsToCsv } from '../../lib/exportApplications';
 
 /** @type definitions and exports are handled by the main component */
 export default function ApplicationsPage() {
@@ -47,6 +48,14 @@ export default function ApplicationsPage() {
         <p className="text-sm text-text-dim">Добавьте отклик вручную или автоматически через букмарклет.</p>
         <div className="flex flex-wrap gap-2">
           <BookmarkletCard />
+          <button
+            onClick={() => exportApplicationsToCsv(applications)}
+            disabled={applications.length === 0}
+            className="shrink-0 rounded-lg border border-border px-4 py-2.5 text-sm text-text-dim transition hover:border-border-soft disabled:opacity-50"
+            title="Скачать все отклики в CSV"
+          >
+            Экспорт
+          </button>
           <button
             onClick={handleAddEmpty}
             className="shrink-0 rounded-lg bg-accent-amber px-5 py-2.5 text-sm font-semibold text-bg transition hover:opacity-90"
