@@ -169,17 +169,11 @@ export function ApplicationCard({
             <TextField value={app.role} onChange={(v) => onUpdate('role', v)} placeholder="Вакансия" />
           </div>
         </div>
-        <button
-          onClick={() => {
-            if (window.confirm(`Удалить отклик «${app.company || app.role || 'без названия'}»? Это нельзя отменить.`)) {
-              onDelete();
-            }
-          }}
-          aria-label="Удалить отклик"
-          className="mt-2 shrink-0 text-text-faint hover:text-accent-coral sm:mt-0"
-        >
-          ✕
-        </button>
+      </div>
+
+      <div className="mt-2">
+        <FieldLabel>Ссылка на вакансию</FieldLabel>
+        <NoteField value={app.vacancy_url ?? ''} onChange={(v) => onUpdate('vacancy_url', v)} />
       </div>
 
       <div className="grid grid-cols-1 gap-2">
@@ -274,6 +268,19 @@ export function ApplicationCard({
           <NoteField value={app.note} onChange={(v) => onUpdate('note', v)} />
         </div>
         <Badge label={APPLICATION_STATUS_LABELS[app.status]} variant={APPLICATION_STATUS_BADGE_VARIANT[app.status]} />
+      </div>
+
+      <div className="mt-3 border-t border-border-soft pt-2 text-right">
+        <button
+          onClick={() => {
+            if (window.confirm(`Удалить отклик «${app.company || app.role || 'без названия'}»? Это нельзя отменить.`)) {
+              onDelete();
+            }
+          }}
+          className="text-xs text-accent-coral hover:underline"
+        >
+          Удалить отклик
+        </button>
       </div>
     </div>
   );

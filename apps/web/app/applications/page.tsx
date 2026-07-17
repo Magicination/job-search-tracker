@@ -38,16 +38,8 @@ export default function ApplicationsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Fixed header button for adding new application */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-text">Отклики</h1>
-        <button
-          onClick={handleAddEmpty}
-          className="shrink-0 rounded-lg bg-accent-amber px-4 py-1.5 text-sm font-semibold text-bg transition hover:opacity-90"
-          title="Добавить новый отклик"
-        >
-          + Новый отклик
-        </button>
       </div>
 
       {/* Main actions area */}
