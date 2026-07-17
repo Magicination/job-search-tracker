@@ -108,7 +108,7 @@ export function useApplications() {
    * серверных или браузерных запросов к api.hh.ru, которые hh.ru блокирует
    * анти-бот защитой). Букмарклет передаёт данные через query-параметры
    * страницы /add, которая и вызывает эту функцию. Ссылка на вакансию
-   * кладётся в note — там уже работает автоопределение и подсветка URL.
+   * кладётся в vacancy_url — там работает автоопределение и подсветка URL.
    */
   const addApplicationFromFields = useCallback(
     async (fields: {
@@ -118,6 +118,7 @@ export function useApplications() {
       experience_required?: string;
       source?: string;
       note?: string;
+      vacancy_url?: string;
     }): Promise<{ success: boolean; error?: string; id?: string }> => {
       const created = await insertApplicationWithHistory(fields);
       if (!created) {

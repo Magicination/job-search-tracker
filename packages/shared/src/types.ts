@@ -46,6 +46,7 @@ export interface Application {
   applied_at: string | null; // точное время отклика (timestamptz), для анализа дня недели/времени суток
   status: ApplicationStatus;
   note: string;
+  vacancy_url: string | null;
   resume_version_id: string | null; // ссылка на использованную версию резюме
   cover_letter_version_id: string | null; // ссылка на использованную версию сопроводительного
   salary: string; // свободный текст — диапазон/валюта вводятся пользователем как есть

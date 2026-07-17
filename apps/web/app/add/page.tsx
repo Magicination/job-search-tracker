@@ -34,7 +34,7 @@ export default function AddFromBookmarkletPage() {
       salary,
       experience_required: experience,
       source: url.includes('hh.') ? 'hh.ru' : '',
-      note: url,
+      vacancy_url: url,
     });
 
     setSubmitting(false);
