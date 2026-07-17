@@ -2,6 +2,10 @@
 node_modules/
 .npm/
 
+# pnpm (будут игнорироваться)
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
 # Next.js
 apps/web/.next/
 apps/web/out/
