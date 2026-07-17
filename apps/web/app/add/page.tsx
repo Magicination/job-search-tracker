@@ -23,8 +23,27 @@ export default function AddFromBookmarkletPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Проверка на дубли: по vacancy_url ИЛИ (company + role совпадают в lower)
+  const duplicate = applications.find(
+    (a) =>
+      (url && a.vacancy_url === url) ||
+      (company.trim() &&
+        role.trim() &&
+        a.company.trim().toLowerCase() === company.trim().toLowerCase() &&
+        a.role.trim().toLowerCase() === role.trim().toLowerCase())
+  );
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Проверка на дубликаты
+    if (duplicate) {
+      const proceed = window.confirm(
+        `Похоже, такой отклик уже есть (добавлен ${new Date(duplicate.created_at).toLocaleDateString('ru-RU')}). Всё равно создать ещё один?`
+      );
+      if (!proceed) return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -52,6 +71,12 @@ export default function AddFromBookmarkletPage() {
         <p className="text-sm text-accent-coral">
           Поля пустые — букмарклет не смог их прочитать на этой странице.
           Проверьте, что открыта страница конкретной вакансии, или заполните вручную.
+        </p>
+      )}
+      {duplicate && (
+        <p className="rounded-lg border border-accent-amber/50 bg-accent-amber/10 p-2 text-sm text-text-dim">
+          Похоже, такой отклик уже есть в списке (добавлен{' '}
+          {new Date(duplicate.created_at).toLocaleDateString('ru-RU')}). Можно всё равно продолжить.
         </p>
       )}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -98,7 +123,7 @@ export default function AddFromBookmarkletPage() {
           disabled={submitting}
           className="rounded-lg bg-accent-amber px-4 py-2 text-sm font-semibold text-bg transition disabled:opacity-60"
         >
-          {submitting ? 'Сохранение…' : 'Создать отклик'}
+          {submitting ? 'Сохранение…' : duplicate ? 'Всё равно создать' : 'Создать отклик'}
         </button>
       </form>
     </div>
