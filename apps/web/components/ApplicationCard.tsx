@@ -150,7 +150,7 @@ export function ApplicationCard({
   onDateChange: (newDate: string) => void;
   onTimeChange: (newTime: string) => void;
   onStatusChange: (status: ApplicationStatus) => void;
-  onDelete: () => void; // Will be replaced with delete handler from state
+  onDelete?: () => Promise<void> | void;
 }) {
   const appliedTime = app.applied_at ? new Date(app.applied_at).toTimeString().slice(0, 5) : '';
 
@@ -301,7 +301,7 @@ export function ApplicationCard({
                 Отмена
               </button>
               <button
-                onClick={() => { onDelete(); setWillDelete(false); }}
+                onClick={() => { setWillDelete(false); }}
                 className="rounded-lg border border-accent-coral bg-bg px-4 py-2 text-sm font-medium text-accent-coral hover:bg-panel transition"
               >
                 Удалить
