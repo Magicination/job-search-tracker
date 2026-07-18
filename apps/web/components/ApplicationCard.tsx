@@ -150,9 +150,12 @@ export function ApplicationCard({
   onDateChange: (newDate: string) => void;
   onTimeChange: (newTime: string) => void;
   onStatusChange: (status: ApplicationStatus) => void;
-  onDelete: () => void;
+  onDelete: () => void; // Will be replaced with delete handler from state
 }) {
   const appliedTime = app.applied_at ? new Date(app.applied_at).toTimeString().slice(0, 5) : '';
+
+  // Flag for delete action
+  const [willDelete, setWillDelete] = useState(false);
 
   const selectedResumeVersion = resumeVersions.find((v) => v.id === app.resume_version_id);
 
@@ -270,18 +273,43 @@ export function ApplicationCard({
         <Badge label={APPLICATION_STATUS_LABELS[app.status]} variant={APPLICATION_STATUS_BADGE_VARIANT[app.status]} />
       </div>
 
-      <div className="mt-3 border-t border-border-soft pt-2 text-right">
+      <div className="mt-3 border-t border-border-soft pt-2 flex items-center justify-between gap-2">
+        <div className="flex-1 text-right">
+          <p className="text-xs text-text-dim truncate" title={app.company || app.role || 'без названия'}>
+            {app.company || app.role || 'без названия'}
+          </p>
+        </div>
         <button
-          onClick={() => {
-            if (window.confirm(`Удалить отклик «${app.company || app.role || 'без названия'}»? Это нельзя отменить.`)) {
-              onDelete();
-            }
-          }}
-          className="text-xs text-accent-coral hover:underline"
+          onClick={() => setWillDelete(true)}
+          className="text-xs text-accent-coral hover:underline focus-visible:border border-border-soft rounded px-1.5 py-0.5 outline-none"
         >
           Удалить отклик
         </button>
       </div>
+
+      {/* Delete confirmation modal */}
+      {willDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-lg border border-border bg-bg shadow-xl">
+            <h2 className="text-base font-semibold text-text mb-3">Удалить отклик</h2>
+            <p className="mb-4 text-sm text-text-dim">Этот отклик будет удалён навсегда. Восстановить его будет невозможно.</p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setWillDelete(false)}
+                className="rounded-lg border border-border bg-panel-2 px-4 py-2 text-sm text-text-dim hover:text-text transition"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => { onDelete(); setWillDelete(false); }}
+                className="rounded-lg border border-accent-coral bg-bg px-4 py-2 text-sm font-medium text-accent-coral hover:bg-panel transition"
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

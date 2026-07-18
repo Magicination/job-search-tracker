@@ -5,6 +5,7 @@ import type { Application, ApplicationStatus, ResumeVersion } from '@job-search-
 import { APPLICATION_STATUS_LABELS } from '@job-search-tracker/shared';
 import { KanbanCard } from './KanbanCard';
 import { Modal } from './Modal';
+import { DeleteModal } from './DeleteModal';
 import { ApplicationCard } from './ApplicationCard';
 
 const STATUS_ORDER: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
@@ -18,7 +19,7 @@ export function KanbanBoard({
   onDateChange: (id: string, newDate: string) => void;
   onTimeChange: (id: string, newTime: string) => void;
   onStatusChange: (id: string, status: ApplicationStatus) => void;
-  onDelete: (id: string) => void;
+  onDelete: () => void; // moved to callback from state
   autoOpenId?: string | null;
   onAutoOpenHandled?: () => void;
 }) {
@@ -66,7 +67,7 @@ export function KanbanBoard({
       <div className="relative -mx-4 sm:mx-0">
         {canScrollLeft && (
           <button onClick={() => scrollBoard(-1)} aria-label="Прокрутить влево"
-            className="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-full border border-border bg-panel px-2 py-1 text-text-dim shadow-md hover:text-text sm:left-2">
+            className="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-full border border-border bg-panel px-2 py-1 text-text-dim shadow-md hover:text-text focus-visible:border-accent-blue outline-none sm:left-2">
             ‹
           </button>
         )}
@@ -74,7 +75,7 @@ export function KanbanBoard({
           <>
             <div className="pointer-events-none absolute right-0 top-0 z-[5] h-full w-10 bg-gradient-to-l from-bg to-transparent" />
             <button onClick={() => scrollBoard(1)} aria-label="Прокрутить вправо"
-              className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-full border border-border bg-panel px-2 py-1 text-text-dim shadow-md hover:text-text sm:right-2">
+              className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-full border border-border bg-panel px-2 py-1 text-text-dim shadow-md hover:text-text focus-visible:border-accent-blue outline-none sm:right-2">
               ›
             </button>
           </>
@@ -99,7 +100,7 @@ export function KanbanBoard({
                     <p className="px-1 text-xs text-text-faint">Пусто</p>
                   ) : (
                     apps.map((app) => (
-                      <KanbanCard key={app.id} app={app} onOpen={() => setOpenId(app.id)} onStatusChange={(s) => onStatusChange(app.id, s)} />
+                      <KanbanCard key={app.id} app={app} onOpen={() => setOpenId(app.id)} onStatusChange={(s) => onStatusChange(app.id, s)} onDelete={() => {}} />
                     ))
                   )}
                 </div>
@@ -118,10 +119,7 @@ export function KanbanBoard({
             onDateChange={(newDate) => onDateChange(openApp.id, newDate)}
             onTimeChange={(newTime) => onTimeChange(openApp.id, newTime)}
             onStatusChange={(status) => onStatusChange(openApp.id, status)}
-            onDelete={() => {
-              onDelete(openApp.id);
-              setOpenId(null);
-            }}
+            onDelete={() => {}} // Will be replaced with DeleteModal callback
           />
         </Modal>
       )}
