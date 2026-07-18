@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApplications } from '../../lib/hooks/useApplications';
 import { useResumeVersions } from '../../lib/hooks/useResumeVersions';
 import { useApplicationFilters } from '../../lib/hooks/useApplicationFilters';
@@ -11,6 +11,7 @@ import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
 import { BookmarkletCard } from '../../components/BookmarkletCard';
 import { SkeletonList } from '../../components/Skeleton';
 import { exportApplicationsToCsv } from '../../lib/exportApplications';
+import { useSearchParams } from 'next/navigation';
 
 /** @type definitions and exports are handled by the main component */
 export default function ApplicationsPage() {
@@ -30,7 +31,28 @@ export default function ApplicationsPage() {
   const { filters, setFilters, filtered, availableSources, resetFilters, hasActiveFilters } =
     useApplicationFilters(applications);
 
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (statusParam) {
+      setFilters((f) => ({ ...f, status: statusParam as any }));
+    }
+  }, [searchParams, setFilters]);
+
   const [autoOpenId, setAutoOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      const isTyping = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+      if (e.key.toLowerCase() === 'n' && !isTyping && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        handleAddEmpty();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   async function handleAddEmpty() {
     const newId = await addApplication();
@@ -87,9 +109,11 @@ export default function ApplicationsPage() {
       {loading ? (
         <SkeletonList rows={4} />
       ) : applications.length === 0 ? (
-        <p className="py-10 text-center text-sm text-text-dim">
-          Откликов пока нет — добавьте первый, чтобы начать вести учёт.
-        </p>
+        <div className="flex flex-col items-center gap-2 py-16 text-center">
+          <p className="text-sm text-text-dim">
+            Откликов пока нет — добавьте вручную кнопкой выше или установите букмарклет для hh.ru.
+          </p>
+        </div>
       ) : filtered.length === 0 ? (
         <p className="py-10 text-center text-sm text-text-dim">
           Ничего не найдено по текущим фильтрам — попробуйте изменить условия поиска.
@@ -102,6 +126,7 @@ export default function ApplicationsPage() {
           onDateChange={updateAppliedDate}
           onTimeChange={updateAppliedTime}
           onStatusChange={updateStatus}
+          onDelete={deleteApplication}
           autoOpenId={autoOpenId}
           onAutoOpenHandled={() => setAutoOpenId(null)}
         />

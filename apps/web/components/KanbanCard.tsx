@@ -1,6 +1,7 @@
 'use client';
 
 import type { Application, ApplicationStatus } from '@job-search-tracker/shared';
+import { TriangleAlert } from 'lucide-react';
 
 const STATUS_ORDER: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
 const STALE_DAYS_THRESHOLD = 7;
@@ -17,10 +18,16 @@ export function KanbanCard({
  app,
  onOpen,
  onStatusChange,
+ dimmed,
+ onDragStartCard,
+ onDragEndCard,
 }: {
  app: Application;
  onOpen: () => void;
  onStatusChange: (status: ApplicationStatus) => void;
+ dimmed?: boolean;
+ onDragStartCard?: () => void;
+ onDragEndCard?: () => void;
 }) {
  const idx = STATUS_ORDER.indexOf(app.status);
  const days = app.status === 'applied' ? daysSince(app.applied_date) : null;
@@ -29,23 +36,29 @@ export function KanbanCard({
  function handleDragStart(e: React.DragEvent) {
  e.dataTransfer.setData('text/plain', app.id);
  e.dataTransfer.effectAllowed = 'move';
+ onDragStartCard?.();
  }
 
  return (
  <div
    draggable
    onDragStart={handleDragStart}
-   className={`cursor-grab select-none rounded-lg border p-3 text-left transition hover:border-border active:cursor-grabbing ${
- isStale ? 'border-accent-amber/50 bg-accent-amber/5' : 'border-border-soft bg-panel'
+   onDragEnd={() => onDragEndCard?.()}
+   className={`cursor-grab select-none rounded-lg border border-l-4 p-3 text-left transition hover:border-border active:cursor-grabbing ${dimmed ? 'opacity-40' : ''} ${
+ isStale ? 'border-accent-amber/50 border-l-accent-amber bg-accent-amber/5'
+   : app.status === 'interview' ? 'border-border-soft border-l-accent-coral bg-panel'
+   : app.status === 'offer' ? 'border-border-soft border-l-accent-teal bg-panel'
+   : app.status === 'rejected' ? 'border-border-soft border-l-text-faint bg-panel'
+   : 'border-border-soft border-l-accent-blue bg-panel'
    }`}
  >
  <button onClick={onOpen} className="block w-full text-left">
- <p className="truncate text-sm font-medium text-text">{app.company || 'Без названия'}</p>
- <p className="truncate text-xs text-text-dim">{app.role}</p>
+ <p className="truncate text-sm font-semibold text-text">{app.company || 'Без названия'}</p>
+ <p className="truncate text-xs text-text-faint">{app.role}</p>
  {app.salary && <p className="mt-1 truncate text-xs text-text-faint">{app.salary}</p>}
  {isStale && (
-   <p className="mt-1 text-xs text-accent-amber" title={`Долго без изменения статуса: ${days} дн.`}>
-     ⚠ {days} дн. без ответа
+   <p className="mt-1 flex items-center gap-1 text-xs text-accent-amber" title={`Долго без изменения статуса: ${days} дн.`}>
+     <TriangleAlert className="h-3 w-3" /> {days} дн. без ответа
    </p>
  )}
  </button>

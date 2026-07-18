@@ -10,12 +10,21 @@ import {
 } from '@job-search-tracker/shared';
 import { Badge } from './Badge';
 import { getDocumentDownloadUrl } from '../lib/documentStorage';
+import { Paperclip, X, ExternalLink } from 'lucide-react';
 
 const STATUS_OPTIONS: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
 
 /** Грубая проверка "похоже на URL" — без строгой валидации, просто чтобы решить, рисовать ли ссылку. */
 function looksLikeUrl(text: string): boolean {
   return /^(https?:\/\/|www\.)\S+\.\S+/i.test(text.trim());
+}
+
+function getUrlDomain(url: string): string {
+  try {
+    return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace('www.', '');
+  } catch {
+    return url;
+  }
 }
 
 function toHref(text: string): string {
@@ -176,7 +185,17 @@ export function ApplicationCard({
 
       <div className="mt-2">
         <FieldLabel>Ссылка на вакансию</FieldLabel>
-        <NoteField value={app.vacancy_url ?? ''} onChange={(v) => onUpdate('vacancy_url', v)} />
+        <TextField value={app.vacancy_url ?? ''} onChange={(v) => onUpdate('vacancy_url', v)} placeholder="https://..." />
+        {app.vacancy_url && looksLikeUrl(app.vacancy_url) && (
+          <a
+            href={toHref(app.vacancy_url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex items-center gap-1 text-xs text-accent-blue hover:underline"
+          >
+            <ExternalLink className="h-3 w-3" /> {getUrlDomain(app.vacancy_url)}
+          </a>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-2">
@@ -258,7 +277,7 @@ export function ApplicationCard({
                 title="Открыть файл"
                 className="text-text-faint hover:text-accent-blue"
               >
-                📎
+                <Paperclip className="h-3.5 w-3.5 inline" />
               </button>
             )}
           </div>

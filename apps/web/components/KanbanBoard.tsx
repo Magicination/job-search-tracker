@@ -24,6 +24,7 @@ export function KanbanBoard({
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<ApplicationStatus | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -99,7 +100,15 @@ export function KanbanBoard({
                     <p className="px-1 text-xs text-text-faint">Пусто</p>
                   ) : (
                     apps.map((app) => (
-                      <KanbanCard key={app.id} app={app} onOpen={() => setOpenId(app.id)} onStatusChange={(s) => onStatusChange(app.id, s)} />
+                      <KanbanCard
+                        key={app.id}
+                        app={app}
+                        dimmed={draggingId === app.id}
+                        onOpen={() => setOpenId(app.id)}
+                        onStatusChange={(s) => onStatusChange(app.id, s)}
+                        onDragStartCard={() => setDraggingId(app.id)}
+                        onDragEndCard={() => setDraggingId(null)}
+                      />
                     ))
                   )}
                 </div>

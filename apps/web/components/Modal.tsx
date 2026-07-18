@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { X } from 'lucide-react';
 
 export function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   useEffect(() => {
@@ -16,7 +17,7 @@ export function Modal({ onClose, children }: { onClose: () => void; children: Re
       <div className="w-full max-w-lg rounded-lg border border-border bg-bg shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-end p-2">
           <button onClick={onClose} aria-label="Закрыть" className="rounded-md px-2 py-1 text-text-faint hover:text-text">
-            ✕
+            <X className="h-4 w-4" />
           </button>
         </div>
         <div className="px-4 pb-4">{children}</div>
