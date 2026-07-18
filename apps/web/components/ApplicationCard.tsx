@@ -301,7 +301,7 @@ export function ApplicationCard({
                 Отмена
               </button>
               <button
-                onClick={() => { setWillDelete(false); }}
+                onClick={() => { setWillDelete(false); onDelete?.(); }}
                 className="rounded-lg border border-accent-coral bg-bg px-4 py-2 text-sm font-medium text-accent-coral hover:bg-panel transition"
               >
                 Удалить
