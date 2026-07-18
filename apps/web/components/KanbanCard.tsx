@@ -22,7 +22,7 @@ export function KanbanCard({
   app: Application;
   onOpen: () => void;
   onStatusChange: (status: ApplicationStatus) => void;
-  onDelete?: () => void; // Optional callback for delete button
+  onDelete?: (id: string) => void; // Required callback for delete button with id parameter
 }) {
   const idx = STATUS_ORDER.indexOf(app.status);
   const days = app.status === 'applied' ? daysSince(app.applied_date) : null;
@@ -55,7 +55,7 @@ export function KanbanCard({
             ⚠ {days} дн. без ответа
           </p>
         )}
-    
+
         {/* Delete button - right-to-left for better visual hierarchy */}
         <div className="flex items-center justify-between mt-2">
           <button onClick={onOpen} className="block w-full text-left flex-grow">
@@ -68,29 +68,31 @@ export function KanbanCard({
               </p>
             )}
           </button>
-          <DeleteButton onDelete={onDelete} />
+          <DeleteButton onDelete={(id) => onDelete?.(id)} />
         </div>
-      {/* Ручной фолбэк смены статуса — на тачскринах drag-and-drop неудобен,
-          эти стрелки двигают карточку на соседний статус в пайплайне. */}
-      <div className="mt-2 flex items-center justify-between">
-        <button
-          disabled={idx <= 0}
-          onClick={() => idx > 0 && onStatusChange(STATUS_ORDER[idx - 1])}
-          className="rounded px-1.5 py-0.5 text-xs text-text-faint hover:text-text disabled:opacity-20"
-          title="Вернуть на предыдущий статус"
-        >
-          ‹
-        </button>
-        <button
-          disabled={idx >= STATUS_ORDER.length - 1}
-          onClick={() => idx < STATUS_ORDER.length - 1 && onStatusChange(STATUS_ORDER[idx + 1])}
-          className="rounded px-1.5 py-0.5 text-xs text-text-faint hover:text-text disabled:opacity-20"
-          title="Продвинуть на следующий статус"
-        >
-          ›
-        </button>
-      </div>
-    </div>
+
+       {/* Ручной фолбэк смены статуса — на тачскринах drag-and-drop неудобен,
+           эти стрелки двигают карточку на соседний статус в пайплайне. */}
+       <div className="mt-2 flex items-center justify-between">
+         <button
+           disabled={idx <= 0}
+           onClick={() => idx > 0 && onStatusChange(STATUS_ORDER[idx - 1])}
+           className="rounded px-1.5 py-0.5 text-xs text-text-faint hover:text-text disabled:opacity-20"
+           title="Вернуть на предыдущий статус"
+         >
+           ‹
+         </button>
+         <button
+           disabled={idx >= STATUS_ORDER.length - 1}
+           onClick={() => idx < STATUS_ORDER.length - 1 && onStatusChange(STATUS_ORDER[idx + 1])}
+           className="rounded px-1.5 py-0.5 text-xs text-text-faint hover:text-text disabled:opacity-20"
+           title="Продвинуть на следующий статус"
+         >
+           ›
+         </button>
+       </div>
+     </button>
+   </div>
   );
 }
 

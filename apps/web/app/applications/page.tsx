@@ -32,6 +32,13 @@ export default function ApplicationsPage() {
 
   const [autoOpenId, setAutoOpenId] = useState<string | null>(null);
 
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteApplication(id).catch(console.error);
+    },
+    [deleteApplication]
+  );
+
   async function handleAddEmpty() {
     const newId = await addApplication();
     if (newId) setAutoOpenId(newId);
