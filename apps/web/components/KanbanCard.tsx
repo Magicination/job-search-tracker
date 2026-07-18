@@ -17,10 +17,12 @@ export function KanbanCard({
   app,
   onOpen,
   onStatusChange,
+  onDelete,
 }: {
   app: Application;
   onOpen: () => void;
   onStatusChange: (status: ApplicationStatus) => void;
+  onDelete?: () => void; // Optional callback for delete button
 }) {
   const idx = STATUS_ORDER.indexOf(app.status);
   const days = app.status === 'applied' ? daysSince(app.applied_date) : null;
@@ -34,8 +36,13 @@ export function KanbanCard({
   return (
     <div
       draggable
+      tabIndex={0}
+      role="button"
       onDragStart={handleDragStart}
-      className={`cursor-grab select-none rounded-lg border p-3 text-left transition hover:border-border active:cursor-grabbing ${
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') onOpen();
+      }}
+      className={`cursor-grab select-none rounded-lg border p-3 text-left transition hover:border-border active:cursor-grabbing focus-visible:border-accent-blue outline-none ${
         isStale ? 'border-accent-amber/50 bg-accent-amber/5' : 'border-border-soft bg-panel'
       }`}
     >
@@ -48,7 +55,21 @@ export function KanbanCard({
             ⚠ {days} дн. без ответа
           </p>
         )}
-      </button>
+    
+        {/* Delete button - right-to-left for better visual hierarchy */}
+        <div className="flex items-center justify-between mt-2">
+          <button onClick={onOpen} className="block w-full text-left flex-grow">
+            <p className="truncate text-sm font-medium text-text">{app.company || 'Без названия'}</p>
+            <p className="truncate text-xs text-text-dim">{app.role}</p>
+            {app.salary && <p className="mt-1 truncate text-xs text-text-faint">{app.salary}</p>}
+            {isStale && (
+              <p className="mt-1 text-xs text-accent-amber" title={`Долго без изменения статуса: ${days} дн.`}>
+                ⚠ {days} дн. без ответа
+              </p>
+            )}
+          </button>
+          <DeleteButton onDelete={onDelete} />
+        </div>
       {/* Ручной фолбэк смены статуса — на тачскринах drag-and-drop неудобен,
           эти стрелки двигают карточку на соседний статус в пайплайне. */}
       <div className="mt-2 flex items-center justify-between">
@@ -72,3 +93,18 @@ export function KanbanCard({
     </div>
   );
 }
+
+function DeleteButton({ onDelete }: { onDelete?: () => void }) {
+  if (!onDelete) return null;
+
+  return (
+    <button
+      onClick={onDelete}
+      aria-label="Удалить отклик"
+      className="mt-1 text-xs text-accent-coral hover:underline focus-visible:border border-border-soft rounded px-1.5 py-0.5 outline-none"
+    >
+      Удалить
+    </button>
+  );
+}
+
