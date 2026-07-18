@@ -18,7 +18,7 @@ export function KanbanBoard({
   onDateChange: (id: string, newDate: string) => void;
   onTimeChange: (id: string, newTime: string) => void;
   onStatusChange: (id: string, status: ApplicationStatus) => void;
-  onDelete?: () => void; // moved to callback from state
+  onDelete?: (id: string) => void;
   autoOpenId?: string | null;
   onAutoOpenHandled?: () => void;
 }) {
@@ -118,6 +118,10 @@ export function KanbanBoard({
             onDateChange={(newDate) => onDateChange(openApp.id, newDate)}
             onTimeChange={(newTime) => onTimeChange(openApp.id, newTime)}
             onStatusChange={(status) => onStatusChange(openApp.id, status)}
+            onDelete={() => {
+              onDelete?.(openApp.id);
+              setOpenId(null);
+            }}
           />
         </Modal>
       )}
