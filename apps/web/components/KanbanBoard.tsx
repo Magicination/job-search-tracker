@@ -5,7 +5,6 @@ import type { Application, ApplicationStatus, ResumeVersion } from '@job-search-
 import { APPLICATION_STATUS_LABELS } from '@job-search-tracker/shared';
 import { KanbanCard } from './KanbanCard';
 import { Modal } from './Modal';
-import { DeleteModal } from './DeleteModal';
 import { ApplicationCard } from './ApplicationCard';
 
 const STATUS_ORDER: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
@@ -19,7 +18,7 @@ export function KanbanBoard({
   onDateChange: (id: string, newDate: string) => void;
   onTimeChange: (id: string, newTime: string) => void;
   onStatusChange: (id: string, status: ApplicationStatus) => void;
-  onDelete: () => void; // moved to callback from state
+  onDelete?: () => void; // moved to callback from state
   autoOpenId?: string | null;
   onAutoOpenHandled?: () => void;
 }) {
@@ -100,7 +99,7 @@ export function KanbanBoard({
                     <p className="px-1 text-xs text-text-faint">Пусто</p>
                   ) : (
                     apps.map((app) => (
-                      <KanbanCard key={app.id} app={app} onOpen={() => setOpenId(app.id)} onStatusChange={(s) => onStatusChange(app.id, s)} onDelete={() => {}} />
+                      <KanbanCard key={app.id} app={app} onOpen={() => setOpenId(app.id)} onStatusChange={(s) => onStatusChange(app.id, s)} />
                     ))
                   )}
                 </div>
@@ -119,7 +118,6 @@ export function KanbanBoard({
             onDateChange={(newDate) => onDateChange(openApp.id, newDate)}
             onTimeChange={(newTime) => onTimeChange(openApp.id, newTime)}
             onStatusChange={(status) => onStatusChange(openApp.id, status)}
-            onDelete={() => {}} // Will be replaced with DeleteModal callback
           />
         </Modal>
       )}

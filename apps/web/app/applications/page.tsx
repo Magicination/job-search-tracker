@@ -102,7 +102,6 @@ export default function ApplicationsPage() {
           onDateChange={updateAppliedDate}
           onTimeChange={updateAppliedTime}
           onStatusChange={updateStatus}
-          onDelete={deleteApplication}
           autoOpenId={autoOpenId}
           onAutoOpenHandled={() => setAutoOpenId(null)}
         />
