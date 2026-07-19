@@ -15,6 +15,8 @@ import {
 import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics';
 import { SkeletonCard } from '../../components/Skeleton';
 import { HourlyChart } from '../../components/HourlyChart';
+import { WeekdayChart } from '../../components/WeekdayChart';
+import { TriangleAlert } from 'lucide-react';
 
 type Period = 'week' | 'month' | 'year' | 'all';
 const PERIOD_LABELS: Record<Period, string> = { week: 'Неделя', month: 'Месяц', year: 'Год', all: 'Всё время' };
@@ -89,20 +91,38 @@ function FunnelStage({
  );
 }
 
-function GroupedTableBody({ groups, emptyHint }: { groups: GroupedConversion[]; emptyHint: string }) {
+function GroupedTableBody({
+ groups,
+ emptyHint,
+ highlightLow,
+}: {
+ groups: GroupedConversion[];
+ emptyHint: string;
+ highlightLow?: boolean;
+}) {
  if (groups.length === 0) {
  return <p className="text-xs text-text-faint">{emptyHint}</p>;
  }
+ const withData = groups.filter((g) => g.total >= 3);
+ const avgRate =
+ withData.length > 0 ? withData.reduce((sum, g) => sum + g.conversionRate, 0) / withData.length : null;
+
  return (
  <div className="flex flex-col gap-1.5">
- {groups.map((g) => (
+ {groups.map((g) => {
+ const isLow = highlightLow && avgRate !== null && g.total >= 3 && g.conversionRate < avgRate * 0.5;
+ return (
  <div key={g.label} className="flex items-center justify-between text-sm">
- <span className="text-text-dim">{g.label}</span>
+ <span className={`flex items-center gap-1 ${isLow ? 'text-accent-coral' : 'text-text-dim'}`}>
+   {g.label}
+   {isLow && <TriangleAlert className="h-3 w-3" />}
+ </span>
  <span className="tabular-nums text-text-faint">
- {g.reachedInterviewOrBetter}/{g.total} · {g.conversionRate}%
+   {g.reachedInterviewOrBetter}/{g.total} · {g.conversionRate}%
  </span>
  </div>
- ))}
+ );
+ })}
  </div>
  );
 }
@@ -206,16 +226,23 @@ export default function AnalyticsPage() {
 
       <div className="grid gap-3 sm:grid-cols-1">
         <CollapsibleSection title="По дню недели отклика">
-          <GroupedTableBody groups={byDayOfWeek} emptyHint="Нет данных — у старых откликов не сохранено точное время отправки." />
+          {byDayOfWeek.some((d) => d.total > 0) ? (
+            <WeekdayChart data={byDayOfWeek} />
+          ) : (
+            <p className="text-xs text-text-faint">Нет данных — у старых откликов не сохранено точное время отправки.</p>
+          )}
         </CollapsibleSection>
-        <CollapsibleSection title="По источнику">
-          <GroupedTableBody groups={bySource} emptyHint="Добавьте источник (hh.ru, LinkedIn и т.д.) в карточках откликов." />
-        </CollapsibleSection>
-        <CollapsibleSection title="По версии резюме">
-          <GroupedTableBody
-            groups={byResumeVersion}
-            emptyHint="Привяжите отклики к версии резюме на странице «Отклики», чтобы сравнить их эффективность."
-          />
+
+        <div className="grid gap-3 sm:grid-cols-1">
+          <CollapsibleSection title="По источнику">
+            <GroupedTableBody groups={bySource} emptyHint="Добавьте источник (hh.ru, LinkedIn и т.д.) в карточках откликов." highlightLow />
+          </CollapsibleSection>
+
+          <CollapsibleSection title="По версии резюме">
+            <GroupedTableBody
+              groups={byResumeVersion}
+              emptyHint="Привяжите отклики к версии резюме на странице «Отклики», чтобы сравнить их эффективность."
+            />
         </CollapsibleSection>
       </div>
     </div>

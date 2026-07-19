@@ -11,7 +11,7 @@ import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
 import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
 import { BookmarkletCard } from '../../components/BookmarkletCard';
 import { SkeletonList } from '../../components/Skeleton';
-import { exportApplicationsToCsv } from '../../lib/exportApplications';
+import { exportApplicationsToCsv, exportWeeklySummaryToCsv } from '../../lib/exportApplications';
 import { useSearchParams } from 'next/navigation';
 
 /** @type definitions and exports are handled by the main component */
@@ -80,6 +80,14 @@ export default function ApplicationsPage() {
             title="Скачать все отклики в CSV"
           >
             Экспорт
+          </button>
+          <button
+            onClick={() => exportWeeklySummaryToCsv(applications, history)}
+            disabled={applications.length === 0}
+            className="shrink-0 rounded-lg border border-border px-4 py-2.5 text-sm text-text-dim transition hover:border-border-soft disabled:opacity-50"
+            title="Сводка по неделям: сколько отправлено и сколько дошло до интервью"
+          >
+            Экспорт по неделям
           </button>
           <button
             onClick={handleAddEmpty}
