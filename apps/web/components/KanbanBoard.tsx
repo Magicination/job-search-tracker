@@ -184,7 +184,7 @@ export function KanbanBoard({
       </div>
 
       <ToastProvider>
-                  {apps.length === 0 ? (
+                  {apps.length === 0 ? (() => {
                     <p className="px-1 text-xs text-text-faint">Пусто</p>
                   ) : (
                     apps.map((app) => {
