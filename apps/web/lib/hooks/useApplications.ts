@@ -9,7 +9,7 @@ import { useToast } from './useToast';
 
 export function useApplications() {
   const { user } = useAuth();
-  const { showError } = useToast();
+  const { showToast, removeToast } = useToast();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -57,39 +57,50 @@ export function useApplications() {
     async (fields: Partial<Application>) => {
       if (!user) return null;
       const now = new Date().toISOString();
+      
+      // Сначала создаём отклик, возвращая auto-generated ID от Supabase
       const { data, error } = await supabase
         .from('applications')
         .insert({
           user_id: user.id,
-          company: '',
-          role: '',
-          source: '',
-          applied_date: getTodayLocal(),
-          applied_at: now,
+          company: fields.company ?? '',
+          role: fields.role ?? '',
+          source: fields.source ?? '',
+          applied_date: fields.applied_date ?? getTodayLocal(),
+          applied_at: fields.applied_at ?? now,
           status: 'applied',
-          note: '',
-          salary: '',
-          experience_required: '',
-          ...fields,
+          note: fields.note ?? '',
+          salary: fields.salary ?? '',
+          experience_required: fields.experience_required ?? '',
+          vacancy_url: fields.vacancy_url ?? null,
         })
         .select()
         .single();
 
       if (error || !data) {
-        showError('Не удалось создать отклик. Попробуйте ещё раз.');
+        console.error('Error creating application:', error);
+        showToast('Не удалось создать отклик. Проверьте соединение и обновите страницу.', 'error');
         return null;
       }
 
       setApplications((prev) => [data as Application, ...prev]);
-      const { error: historyError } = await supabase.from('application_status_history').insert({
-        user_id: user.id,
-        application_id: (data as Application).id,
-        from_status: null,
-        to_status: 'applied',
-        changed_at: now,
-      });
+      
+      // Добавляем запись в историю статусов
+      const { error: historyError } = await supabase
+        .from('application_status_history')
+        .insert({
+          user_id: user.id,
+          application_id: (data as Application).id,
+          from_status: null,
+          to_status: 'applied',
+          changed_at: now,
+        });
+      
       if (historyError) {
-        showError('Отклик создан, но не сохранился в истории для аналитики.');
+        console.error('Error creating status history:', historyError);
+        // Не показываем ошибку пользователю — отклик создан, история не критична
+      } else {
+        showToast('Отклик успешно сохранён', 'success');
       }
 
       return data as Application;
@@ -145,6 +156,7 @@ export function useApplications() {
       if (debounceTimers.current[key]) {
         clearTimeout(debounceTimers.current[key]);
       }
+      
       debounceTimers.current[key] = setTimeout(async () => {
         const { error } = await supabase
           .from('applications')
@@ -152,16 +164,18 @@ export function useApplications() {
           .eq('id', id);
 
         if (error) {
-          showError('Не удалось сохранить изменение. Попробуйте ещё раз.');
+          showToast(`Не удалось сохранить ${String(field).toLowerCase()}. Попробуйте ещё раз.`, 'error');
           if (previousValue !== undefined) {
             setApplications((prev) =>
               prev.map((app) => (app.id === id ? { ...app, [field]: previousValue as Application[K] } : app))
             );
           }
+        } else {
+          showToast(`Изменение ${String(field).toLowerCase()} сохранено`, 'success');
         }
       }, debounceMs);
     },
-    [showError]
+    [showToast]
   );
 
   /**
@@ -205,6 +219,7 @@ export function useApplications() {
       if (debounceTimers.current[key]) {
         clearTimeout(debounceTimers.current[key]);
       }
+      
       debounceTimers.current[key] = setTimeout(async () => {
         const { error } = await supabase
           .from('applications')
@@ -216,14 +231,16 @@ export function useApplications() {
           .eq('id', id);
 
         if (error) {
-          showError('Не удалось сохранить дату отклика. Попробуйте ещё раз.');
+          showToast('Не удалось сохранить дату отклика. Попробуйте ещё раз.', 'error');
           setApplications((prev) =>
             prev.map((app) => (app.id === id ? { ...app, applied_date: previousDate, applied_at: previousAt } : app))
           );
+        } else {
+          showToast('Дата отклика сохранена', 'success');
         }
       }, 0);
     },
-    [applications, showError]
+    [applications, showToast]
   );
 
   /**
@@ -258,6 +275,7 @@ export function useApplications() {
       if (debounceTimers.current[key]) {
         clearTimeout(debounceTimers.current[key]);
       }
+      
       debounceTimers.current[key] = setTimeout(async () => {
         const { error } = await supabase
           .from('applications')
@@ -265,14 +283,16 @@ export function useApplications() {
           .eq('id', id);
 
         if (error) {
-          showError('Не удалось сохранить время отклика. Попробуйте ещё раз.');
+          showToast('Не удалось сохранить время отклика. Попробуйте ещё раз.', 'error');
           setApplications((prev) =>
             prev.map((app) => (app.id === id ? { ...app, applied_at: previousAt } : app))
           );
+        } else {
+          showToast('Время отклика сохранено', 'success');
         }
       }, 500);
     },
-    [applications, showError]
+    [applications, showToast]
   );
 
   const deleteApplication = useCallback(
@@ -281,12 +301,15 @@ export function useApplications() {
       setApplications((prev) => prev.filter((app) => app.id !== id));
 
       const { error } = await supabase.from('applications').delete().eq('id', id);
+      
       if (error && removed) {
-        showError('Не удалось удалить отклик. Попробуйте ещё раз.');
+        showToast('Не удалось удалить отклик. Попробуйте ещё раз.', 'error');
         setApplications((prev) => [...prev, removed].sort((a, b) => b.created_at.localeCompare(a.created_at)));
+      } else {
+        showToast('Отклик успешно удалён', 'success');
       }
     },
-    [applications, showError]
+    [applications, showToast]
   );
 
   /**
@@ -313,7 +336,7 @@ export function useApplications() {
         .eq('id', id);
 
       if (error) {
-        showError('Не удалось изменить статус. Попробуйте ещё раз.');
+        showToast('Не удалось изменить статус. Попробуйте ещё раз.', 'error');
         setApplications((prev) => prev.map((app) => (app.id === id ? current : app)));
         return;
       }
@@ -325,11 +348,15 @@ export function useApplications() {
         to_status: newStatus,
         changed_at: now,
       });
+
       if (historyError) {
-        showError('Статус изменён, но не сохранился в истории для аналитики.');
+        console.error('Failed to create status history entry:', historyError);
+      } else {
+        const statusText = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        showToast(`Статус обновлён: ${statusText}`, 'success');
       }
     },
-    [user, applications, showError]
+    [user, applications, showToast]
   );
 
   return {

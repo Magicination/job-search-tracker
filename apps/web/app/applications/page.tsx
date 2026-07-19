@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useApplications } from '../../lib/hooks/useApplications';
 import { useResumeVersions } from '../../lib/hooks/useResumeVersions';
 import { useApplicationFilters } from '../../lib/hooks/useApplicationFilters';
+import { useApplicationHistory } from '../../lib/hooks/useApplicationHistory';
 import { KanbanBoard } from '../../components/KanbanBoard';
 import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
 import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
@@ -27,6 +28,8 @@ export default function ApplicationsPage() {
   } = useApplications();
   const { versions: resumeVersions, addVersion: addResumeVersion, deleteVersion: deleteResumeVersion } =
     useResumeVersions();
+  
+  const { history, loading: historyLoading } = useApplicationHistory();
 
   const { filters, setFilters, filtered, availableSources, resetFilters, hasActiveFilters } =
     useApplicationFilters(applications);
@@ -122,6 +125,7 @@ export default function ApplicationsPage() {
         <KanbanBoard
           applications={filtered}
           resumeVersions={resumeVersions}
+          history={history}
           onUpdate={(id, field, value, debounceMs) => updateField(id, field as any, value, debounceMs)}
           onDateChange={updateAppliedDate}
           onTimeChange={updateAppliedTime}
@@ -129,6 +133,7 @@ export default function ApplicationsPage() {
           onDelete={deleteApplication}
           autoOpenId={autoOpenId}
           onAutoOpenHandled={() => setAutoOpenId(null)}
+          sortMode="oldest"
         />
       )}
     </div>

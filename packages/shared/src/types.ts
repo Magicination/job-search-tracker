@@ -75,6 +75,13 @@ export interface ApplicationStatusHistoryEntry {
   changed_at: string;
 }
 
+/** Тип для отображения истории статусов в мини-таймлайне */
+export interface StatusHistoryPoint {
+  from_status: string | null;
+  to_status: string;
+  changed_at: string;
+}
+
 export type StudyTrack = 'eng' | 'sql';
 
 export interface StudyHours {

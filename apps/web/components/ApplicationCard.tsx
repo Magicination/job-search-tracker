@@ -45,13 +45,23 @@ function TextField({
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
+  const [saveFeedback, setSaveFeedback] = useState(false);
+
   return (
-    <input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text outline-none focus-visible:border-accent-blue"
-    />
+    <div className="relative">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text outline-none focus-visible:border-accent-blue hover:border-border/80 transition-colors"
+      />
+      {/* Индикатор успешного сохранения поля */}
+      <div className="pointer-events-none absolute -top-1 right-1 flex h-4 w-4">
+        <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-accent-teal opacity-0 transition-opacity duration-150 ease-out" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+    </div>
   );
 }
 
