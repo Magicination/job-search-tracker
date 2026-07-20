@@ -31,8 +31,8 @@ function StatusTimeline({ history }: { history?: StatusHistoryPoint[] }) {
  // Get the most recent status
  const latest = sorted[0];
  const dateOnly = latest.changed_at ? new Date(latest.changed_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) : '';
- const fromText = latest.from_status !== null ? APPLICATION_STATUS_LABELS[latest.from_status] || latest.from_status : '—';
- const toText = APPLICATION_STATUS_LABELS[latest.to_status] || latest.to_status;
+ const fromText = latest.from_status !== null ? APPLICATION_STATUS_LABELS[latest.from_status as keyof typeof APPLICATION_STATUS_LABELS] || latest.from_status : '—';
+ const toText = APPLICATION_STATUS_LABELS[latest.to_status as keyof typeof APPLICATION_STATUS_LABELS] || latest.to_status;
 
  // Calculate time since last change (simple days)
  if (sorted.length > 1) {

@@ -244,6 +244,7 @@ export default function AnalyticsPage() {
               emptyHint="Привяжите отклики к версии резюме на странице «Отклики», чтобы сравнить их эффективность."
             />
         </CollapsibleSection>
+        </div>
       </div>
     </div>
   );
