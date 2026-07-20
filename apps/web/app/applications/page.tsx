@@ -19,6 +19,7 @@ export default function ApplicationsPage() {
   const {
     applications,
     loading,
+    savingIds,
     addApplication,
     updateField,
     updateStatus,
@@ -134,6 +135,7 @@ export default function ApplicationsPage() {
           applications={filtered}
           resumeVersions={resumeVersions}
           history={history}
+          savingIds={savingIds}
           onUpdate={(id, field, value, debounceMs) => updateField(id, field as any, value, debounceMs)}
           onDateChange={updateAppliedDate}
           onTimeChange={updateAppliedTime}

@@ -12,6 +12,7 @@ export function useApplications() {
   const { showToast } = useToast();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const fetchApplications = useCallback(async () => {
@@ -325,6 +326,8 @@ export function useApplications() {
       const current = applications.find((app) => app.id === id);
       if (!current || current.status === newStatus) return;
 
+      setSavingIds((prev) => new Set(prev).add(id));
+
       const now = new Date().toISOString();
       setApplications((prev) =>
         prev.map((app) => (app.id === id ? { ...app, status: newStatus, updated_at: now } : app))
@@ -338,6 +341,11 @@ export function useApplications() {
       if (error) {
         showToast('Не удалось изменить статус. Попробуйте ещё раз.', 'error');
         setApplications((prev) => prev.map((app) => (app.id === id ? current : app)));
+        setSavingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
         return;
       }
 
@@ -355,6 +363,12 @@ export function useApplications() {
         const statusText = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
         showToast(`Статус обновлён: ${statusText}`, 'success');
       }
+
+      setSavingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     },
     [user, applications, showToast]
   );
@@ -362,6 +376,7 @@ export function useApplications() {
   return {
     applications,
     loading,
+    savingIds,
     addApplication,
     addApplicationFromFields,
     updateField,

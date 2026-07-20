@@ -30,7 +30,7 @@ function StatPill({
 
 export function Header() {
   const { user } = useAuth();
-  const { applied, interview, offer } = useHeaderStats();
+  const { applied, interview, offer, rejected } = useHeaderStats();
 
   if (!user) return null;
 
@@ -42,8 +42,9 @@ export function Header() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <StatPill label="отправлено" value={applied} accentClass="text-accent-blue" href="/applications?status=applied" />
-          <StatPill label="интервью" value={interview} accentClass="text-accent-coral" href="/applications?status=interview" />
+          <StatPill label="интервью" value={interview} accentClass="text-accent-amber" href="/applications?status=interview" />
           <StatPill label="оффер" value={offer} accentClass="text-accent-teal" href="/applications?status=offer" />
+          <StatPill label="отклонён" value={rejected} accentClass="text-accent-coral" href="/applications?status=rejected" />
           <ThemeToggle />
           <button
             onClick={() => supabase.auth.signOut()}

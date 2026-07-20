@@ -38,9 +38,9 @@ export const SLOT_TYPE_COLORS = {
 // Цвет по статусу отклика — см. 02-screens-web.md, раздел /applications.
 export const APPLICATION_STATUS_COLORS = {
   applied: COLORS.accentBlue,
-  interview: COLORS.accentCoral,
+  interview: COLORS.accentAmber,
   offer: COLORS.accentTeal,
-  rejected: COLORS.textFaint,
+  rejected: COLORS.accentCoral,
 } as const;
 
 // Вариант темы для компонента Badge — в отличие от *_COLORS выше (фиксированный
@@ -72,9 +72,9 @@ export const APPLICATION_STATUS_BADGE_VARIANT: Record<
   BadgeVariant
 > = {
   applied: 'blue',
-  interview: 'coral',
+  interview: 'amber',
   offer: 'teal',
-  rejected: 'neutral',
+  rejected: 'coral',
 };
 
 export const TASK_CATEGORY_LABELS = {

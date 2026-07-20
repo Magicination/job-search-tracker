@@ -100,10 +100,11 @@ export interface HeaderStatusCounts {
   applied: number;
   interview: number;
   offer: number;
+  rejected: number;
 }
 
 export function calculateHeaderStatusCounts(applications: Application[]): HeaderStatusCounts {
-  const counts: HeaderStatusCounts = { applied: 0, interview: 0, offer: 0 };
+  const counts: HeaderStatusCounts = { applied: 0, interview: 0, offer: 0, rejected: 0 };
   for (const app of applications) {
     if (app.status in counts) {
       counts[app.status as keyof HeaderStatusCounts] += 1;

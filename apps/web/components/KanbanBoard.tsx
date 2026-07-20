@@ -19,7 +19,7 @@ function daysSinceApplied(dateStr: string | null): number | null {
 }
 
 export function KanbanBoard({
-  applications, resumeVersions, onUpdate, onDateChange, onTimeChange, onStatusChange, onDelete, autoOpenId, onAutoOpenHandled, history,
+  applications, resumeVersions, onUpdate, onDateChange, onTimeChange, onStatusChange, onDelete, autoOpenId, onAutoOpenHandled, history, savingIds,
 }: {
   applications: Application[];
   resumeVersions: ResumeVersion[];
@@ -31,6 +31,7 @@ export function KanbanBoard({
   autoOpenId?: string | null;
   onAutoOpenHandled?: () => void;
   history?: ApplicationStatusHistoryEntry[];
+  savingIds?: Set<string>;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<ApplicationStatus | null>(null);
@@ -121,6 +122,7 @@ export function KanbanBoard({
                       onOpen={() => setOpenId(app.id)}
                       onStatusChange={(s) => onStatusChange(app.id, s)}
                       history={historyFor(app.id)}
+                      saving={savingIds?.has(app.id)}
                     />
                   ))
                 )}
@@ -153,7 +155,7 @@ export function KanbanBoard({
                   onDragOver={(e) => { e.preventDefault(); setDragOverStatus(status); }}
                   onDragLeave={() => setDragOverStatus((s) => (s === status ? null : s))}
                   onDrop={(e) => handleDrop(e, status)}
-                  className={`flex w-48 shrink-0 flex-col gap-2 rounded-lg border p-2 transition sm:w-60 ${
+                  className={`flex w-48 shrink-0 flex-col gap-2 rounded-lg border p-2 transition sm:w-60 lg:w-72 ${
                     dragOverStatus === status ? 'border-accent-amber bg-panel' : 'border-border-soft'
                   }`}>
                   <div className="flex items-center justify-between px-1 py-1">
@@ -174,6 +176,7 @@ export function KanbanBoard({
                           onDragStartCard={() => setDraggingId(app.id)}
                           onDragEndCard={() => setDraggingId(null)}
                           history={historyFor(app.id)}
+                          saving={savingIds?.has(app.id)}
                         />
                       ))
                     )}
