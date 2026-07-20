@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { StatusHistoryPoint } from '@job-search-tracker/shared';
+import type { ApplicationStatusHistoryEntry } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
 
 export function useApplicationHistory() {
   const { user } = useAuth();
-  const [history, setHistory] = useState<StatusHistoryPoint[]>([]);
+  const [history, setHistory] = useState<ApplicationStatusHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchHistory = useCallback(async () => {
@@ -27,7 +27,7 @@ export function useApplicationHistory() {
       if (error) {
         console.error('Error fetching status history:', error);
       } else if (data) {
-        setHistory(data as StatusHistoryPoint[]);
+        setHistory(data as ApplicationStatusHistoryEntry[]);
       }
     } catch (err) {
       console.error('Error fetching status history:', err);
