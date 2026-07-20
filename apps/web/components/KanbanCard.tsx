@@ -135,5 +135,6 @@ export function KanbanCard({
  </button>
  </div>
  </div>
+ </div>
  );
 }

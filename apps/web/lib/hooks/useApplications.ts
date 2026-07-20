@@ -9,7 +9,7 @@ import { useToast } from './useToast';
 
 export function useApplications() {
   const { user } = useAuth();
-  const { showToast, removeToast } = useToast();
+  const { showToast } = useToast();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -22,12 +22,12 @@ export function useApplications() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     if (error) {
-      showError('Не удалось загрузить отклики. Проверьте соединение и обновите страницу.');
+      showToast('Не удалось загрузить отклики. Проверьте соединение и обновите страницу.', 'error');
     } else if (data) {
       setApplications(data as Application[]);
     }
     setLoading(false);
-  }, [user, showError]);
+  }, [user, showToast]);
 
   useEffect(() => {
     if (!user) return;
@@ -105,7 +105,7 @@ export function useApplications() {
 
       return data as Application;
     },
-    [user, showError]
+    [user, showToast]
   );
 
   const addApplication = useCallback(async (): Promise<string | null> => {

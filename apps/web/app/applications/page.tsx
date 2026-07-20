@@ -141,7 +141,6 @@ export default function ApplicationsPage() {
           onDelete={deleteApplication}
           autoOpenId={autoOpenId}
           onAutoOpenHandled={() => setAutoOpenId(null)}
-          sortMode="oldest"
         />
       )}
     </div>
