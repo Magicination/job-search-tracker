@@ -296,18 +296,59 @@ export function useApplications() {
     [applications, showToast]
   );
 
+  /**
+   * "Удаление" отклика — не стирает строку в базе, а помечает archived=true.
+   * Обратимо через restoreApplication. Ничего не удаляем физически по
+   * умолчанию — см. историю с почти потерянными данными на миграции статуса
+   * "Скрининг", после этого решили не рисковать необратимыми операциями.
+   */
   const deleteApplication = useCallback(
+    async (id: string) => {
+      const removed = applications.find((app) => app.id === id);
+      setApplications((prev) => prev.map((app) => (app.id === id ? { ...app, archived: true } : app)));
+
+      const { error } = await supabase.from('applications').update({ archived: true }).eq('id', id);
+
+      if (error && removed) {
+        showToast('Не удалось убрать отклик. Попробуйте ещё раз.', 'error');
+        setApplications((prev) => prev.map((app) => (app.id === id ? removed : app)));
+      } else {
+        showToast('Отклик перенесён в архив', 'success');
+      }
+    },
+    [applications, showToast]
+  );
+
+  const restoreApplication = useCallback(
+    async (id: string) => {
+      const current = applications.find((app) => app.id === id);
+      setApplications((prev) => prev.map((app) => (app.id === id ? { ...app, archived: false } : app)));
+
+      const { error } = await supabase.from('applications').update({ archived: false }).eq('id', id);
+
+      if (error && current) {
+        showToast('Не удалось восстановить отклик. Попробуйте ещё раз.', 'error');
+        setApplications((prev) => prev.map((app) => (app.id === id ? current : app)));
+      } else {
+        showToast('Отклик восстановлен', 'success');
+      }
+    },
+    [applications, showToast]
+  );
+
+  /** Настоящее, безвозвратное удаление — доступно только из архива, с явным подтверждением на UI. */
+  const permanentlyDeleteApplication = useCallback(
     async (id: string) => {
       const removed = applications.find((app) => app.id === id);
       setApplications((prev) => prev.filter((app) => app.id !== id));
 
       const { error } = await supabase.from('applications').delete().eq('id', id);
-      
+
       if (error && removed) {
         showToast('Не удалось удалить отклик. Попробуйте ещё раз.', 'error');
         setApplications((prev) => [...prev, removed].sort((a, b) => b.created_at.localeCompare(a.created_at)));
       } else {
-        showToast('Отклик успешно удалён', 'success');
+        showToast('Отклик удалён безвозвратно', 'success');
       }
     },
     [applications, showToast]
@@ -329,13 +370,16 @@ export function useApplications() {
       setSavingIds((prev) => new Set(prev).add(id));
 
       const now = new Date().toISOString();
+      const shouldArchive = newStatus === 'rejected';
       setApplications((prev) =>
-        prev.map((app) => (app.id === id ? { ...app, status: newStatus, updated_at: now } : app))
+        prev.map((app) =>
+          app.id === id ? { ...app, status: newStatus, updated_at: now, archived: shouldArchive || app.archived } : app
+        )
       );
 
       const { error } = await supabase
         .from('applications')
-        .update({ status: newStatus, updated_at: now })
+        .update({ status: newStatus, updated_at: now, ...(shouldArchive ? { archived: true } : {}) })
         .eq('id', id);
 
       if (error) {
@@ -361,7 +405,10 @@ export function useApplications() {
         console.error('Failed to create status history entry:', historyError);
       } else {
         const statusText = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-        showToast(`Статус обновлён: ${statusText}`, 'success');
+        showToast(
+          shouldArchive ? `Статус обновлён: ${statusText} — перенесён в архив` : `Статус обновлён: ${statusText}`,
+          'success'
+        );
       }
 
       setSavingIds((prev) => {
@@ -384,5 +431,7 @@ export function useApplications() {
     updateAppliedDate,
     updateAppliedTime,
     deleteApplication,
+    restoreApplication,
+    permanentlyDeleteApplication,
   };
 }

@@ -118,9 +118,7 @@ export function calculateHeaderStatusCounts(applications: Application[]): Header
  * изменения статуса (любого — screen/interview/rejected). Возвращает null,
  * если данных недостаточно (нет ни одного перехода).
  */
-export function calculateAverageDaysToFirstResponse(
-  history: ApplicationStatusHistoryEntry[]
-): number | null {
+function collectDaysToFirstResponse(history: ApplicationStatusHistoryEntry[]): number[] {
   const byApplication = new Map<string, ApplicationStatusHistoryEntry[]>();
   for (const entry of history) {
     const list = byApplication.get(entry.application_id) ?? [];
@@ -145,9 +143,93 @@ export function calculateAverageDaysToFirstResponse(
     }
   }
 
+  return daysToResponse;
+}
+
+export function calculateAverageDaysToFirstResponse(
+  history: ApplicationStatusHistoryEntry[]
+): number | null {
+  const daysToResponse = collectDaysToFirstResponse(history);
   if (daysToResponse.length === 0) return null;
   const avg = daysToResponse.reduce((sum, d) => sum + d, 0) / daysToResponse.length;
   return Math.round(avg * 10) / 10; // округление до 1 знака после запятой
+}
+
+/**
+ * Медиана дней до первого ответа — устойчивее среднего к редким выбросам
+ * (например, один отклик, на который ответили через 2 месяца, сильно
+ * искажает среднее, но почти не влияет на медиану).
+ */
+export function calculateMedianDaysToFirstResponse(
+  history: ApplicationStatusHistoryEntry[]
+): number | null {
+  const daysToResponse = collectDaysToFirstResponse(history).sort((a, b) => a - b);
+  if (daysToResponse.length === 0) return null;
+  const mid = Math.floor(daysToResponse.length / 2);
+  const median =
+    daysToResponse.length % 2 !== 0 ? daysToResponse[mid] : (daysToResponse[mid - 1] + daysToResponse[mid]) / 2;
+  return Math.round(median * 10) / 10;
+}
+
+/**
+ * Компании, которые ни разу не ответили: единственная запись в истории —
+ * создание отклика (переход из null в 'applied'), статус всё ещё 'applied',
+ * и прошло больше thresholdDays дней. Отдельно от общего бейджа "давно без
+ * ответа" на карточке — здесь именно список по компаниям, для аналитики.
+ */
+export interface SilentCompany {
+  company: string;
+  days: number;
+  applicationId: string;
+}
+
+export function calculateSilentCompanies(
+  applications: Application[],
+  history: ApplicationStatusHistoryEntry[],
+  thresholdDays = 14
+): SilentCompany[] {
+  const historyCountByApp = new Map<string, number>();
+  for (const h of history) {
+    historyCountByApp.set(h.application_id, (historyCountByApp.get(h.application_id) ?? 0) + 1);
+  }
+
+  const now = new Date();
+  const results: SilentCompany[] = [];
+
+  for (const app of applications) {
+    if (app.status !== 'applied' || !app.applied_date) continue;
+    const historyCount = historyCountByApp.get(app.id) ?? 0;
+    if (historyCount > 1) continue; // был хотя бы один переход статуса — не тишина
+
+    const applied = new Date(app.applied_date);
+    const days = Math.floor(
+      (now.setHours(0, 0, 0, 0) - applied.setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24)
+    );
+    if (days >= thresholdDays) {
+      results.push({ company: app.company || 'Без названия', days, applicationId: app.id });
+    }
+  }
+
+  return results.sort((a, b) => b.days - a.days);
+}
+
+/** Компании, на которые откликались больше одного раза. */
+export interface RepeatCompany {
+  company: string;
+  count: number;
+}
+
+export function calculateRepeatCompanies(applications: Application[]): RepeatCompany[] {
+  const counts = new Map<string, number>();
+  for (const app of applications) {
+    const name = app.company.trim();
+    if (!name) continue;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .filter(([, count]) => count > 1)
+    .map(([company, count]) => ({ company, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 // ============================================================

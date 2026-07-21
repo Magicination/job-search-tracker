@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import type { Application, ApplicationStatus, ResumeVersion, ApplicationStatusHistoryEntry } from '@job-search-tracker/shared';
+import type { Application, ApplicationStatus, ResumeVersion, ApplicationStatusHistoryEntry, Company } from '@job-search-tracker/shared';
 import { APPLICATION_STATUS_LABELS } from '@job-search-tracker/shared';
 import { KanbanCard } from './KanbanCard';
 import { Modal } from './Modal';
@@ -19,7 +19,7 @@ function daysSinceApplied(dateStr: string | null): number | null {
 }
 
 export function KanbanBoard({
-  applications, resumeVersions, onUpdate, onDateChange, onTimeChange, onStatusChange, onDelete, autoOpenId, onAutoOpenHandled, history, savingIds,
+  applications, resumeVersions, onUpdate, onDateChange, onTimeChange, onStatusChange, onDelete, autoOpenId, onAutoOpenHandled, history, savingIds, companies, onUpdateCompany,
 }: {
   applications: Application[];
   resumeVersions: ResumeVersion[];
@@ -32,6 +32,8 @@ export function KanbanBoard({
   onAutoOpenHandled?: () => void;
   history?: ApplicationStatusHistoryEntry[];
   savingIds?: Set<string>;
+  companies?: Company[];
+  onUpdateCompany?: (companyId: string, fields: { url: string }) => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<ApplicationStatus | null>(null);
@@ -201,6 +203,8 @@ export function KanbanBoard({
               onDelete?.(openApp.id);
               setOpenId(null);
             }}
+            company={openApp.company_id ? companies?.find((c) => c.id === openApp.company_id) ?? null : null}
+            onUpdateCompany={onUpdateCompany}
           />
         </Modal>
       )}

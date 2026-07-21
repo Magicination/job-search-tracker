@@ -6,10 +6,12 @@ import { useApplications } from '../../lib/hooks/useApplications';
 import { useResumeVersions } from '../../lib/hooks/useResumeVersions';
 import { useApplicationFilters } from '../../lib/hooks/useApplicationFilters';
 import { useApplicationHistory } from '../../lib/hooks/useApplicationHistory';
+import { useCompanies } from '../../lib/hooks/useCompanies';
 import { KanbanBoard } from '../../components/KanbanBoard';
 import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
 import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
 import { BookmarkletCard } from '../../components/BookmarkletCard';
+import { ArchiveSection } from '../../components/ArchiveSection';
 import { SkeletonList } from '../../components/Skeleton';
 import { exportApplicationsToCsv, exportWeeklySummaryToCsv } from '../../lib/exportApplications';
 import { useSearchParams } from 'next/navigation';
@@ -26,14 +28,34 @@ export default function ApplicationsPage() {
     updateAppliedDate,
     updateAppliedTime,
     deleteApplication,
+    restoreApplication,
+    permanentlyDeleteApplication,
   } = useApplications();
   const { versions: resumeVersions, addVersion: addResumeVersion, deleteVersion: deleteResumeVersion } =
     useResumeVersions();
-  
+
   const { history, loading: historyLoading } = useApplicationHistory();
+  const { companies, findOrCreateCompany, updateCompany } = useCompanies();
+
+  const activeApplications = applications.filter((a) => !a.archived);
+  const archivedApplications = applications.filter((a) => a.archived);
 
   const { filters, setFilters, filtered, availableSources, resetFilters, hasActiveFilters } =
-    useApplicationFilters(applications);
+    useApplicationFilters(activeApplications);
+
+  /**
+   * Компания — отдельная сущность (см. useCompanies): при изменении текста
+   * поля "Компания" на отклике находим/создаём соответствующую запись и
+   * привязываем company_id, чтобы группировка в архиве и рейтинг компании
+   * работали независимо от точного текста в каждом отдельном отклике.
+   */
+  async function handleUpdate(id: string, field: string, value: any, debounceMs?: number) {
+    updateField(id, field as any, value, debounceMs);
+    if (field === 'company' && typeof value === 'string' && value.trim()) {
+      const companyId = await findOrCreateCompany(value);
+      if (companyId) updateField(id, 'company_id' as any, companyId, 0);
+    }
+  }
 
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -120,7 +142,7 @@ export default function ApplicationsPage() {
 
       {loading ? (
         <SkeletonList rows={4} />
-      ) : applications.length === 0 ? (
+      ) : activeApplications.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center">
           <p className="text-sm text-text-dim">
             Откликов пока нет — добавьте вручную кнопкой выше или установите букмарклет для hh.ru.
@@ -136,7 +158,9 @@ export default function ApplicationsPage() {
           resumeVersions={resumeVersions}
           history={history}
           savingIds={savingIds}
-          onUpdate={(id, field, value, debounceMs) => updateField(id, field as any, value, debounceMs)}
+          companies={companies}
+          onUpdateCompany={updateCompany}
+          onUpdate={handleUpdate}
           onDateChange={updateAppliedDate}
           onTimeChange={updateAppliedTime}
           onStatusChange={updateStatus}
@@ -145,6 +169,14 @@ export default function ApplicationsPage() {
           onAutoOpenHandled={() => setAutoOpenId(null)}
         />
       )}
+
+      <ArchiveSection
+        archivedApplications={archivedApplications}
+        companies={companies}
+        onRestore={restoreApplication}
+        onPermanentDelete={permanentlyDeleteApplication}
+        onUpdateCompany={updateCompany}
+      />
     </div>
   );
 }

@@ -47,12 +47,24 @@ export interface Application {
   status: ApplicationStatus;
   note: string;
   vacancy_url: string | null;
+  company_id: string | null; // ссылка на запись в companies — заполняется автоматически по названию
+  archived: boolean; // отклик скрыт из основной доски (авто при отказе, вручную при "удалении")
   resume_version_id: string | null; // ссылка на использованную версию резюме
   cover_letter_version_id: string | null; // ссылка на использованную версию сопроводительного
   salary: string; // свободный текст — диапазон/валюта вводятся пользователем как есть
   experience_required: string; // требуемый опыт по вакансии, свободный текст
   created_at: string;
   updated_at: string;
+}
+
+export interface Company {
+  id: string;
+  user_id: string;
+  name: string;
+  url: string | null; // сайт компании — не путать с vacancy_url на конкретном отклике
+  rating: number | null; // личный рейтинг 1-5, ставит сам пользователь
+  note: string;
+  created_at: string;
 }
 
 export interface ResumeVersion {

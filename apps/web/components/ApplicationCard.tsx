@@ -162,6 +162,8 @@ export function ApplicationCard({
   onTimeChange,
   onStatusChange,
   onDelete,
+  company,
+  onUpdateCompany,
 }: {
   app: Application;
   resumeVersions: ResumeVersion[];
@@ -170,11 +172,14 @@ export function ApplicationCard({
   onTimeChange: (newTime: string) => void;
   onStatusChange: (status: ApplicationStatus) => void;
   onDelete?: () => Promise<void> | void;
+  company?: { id: string; url: string | null } | null;
+  onUpdateCompany?: (companyId: string, fields: { url: string }) => void;
 }) {
   const appliedTime = app.applied_at ? new Date(app.applied_at).toTimeString().slice(0, 5) : '';
 
   // Flag for delete action
   const [willDelete, setWillDelete] = useState(false);
+  const [editingCompanyUrl, setEditingCompanyUrl] = useState(false);
 
   const selectedResumeVersion = resumeVersions.find((v) => v.id === app.resume_version_id);
 
@@ -185,9 +190,48 @@ export function ApplicationCard({
           <div>
             <FieldLabel>Компания</FieldLabel>
             <TextField value={app.company} onChange={(v) => onUpdate('company', v)} placeholder="Компания" />
+            {company && (
+              editingCompanyUrl ? (
+                <input
+                  autoFocus
+                  defaultValue={company.url ?? ''}
+                  placeholder="https://сайт-компании..."
+                  onBlur={(e) => {
+                    onUpdateCompany?.(company.id, { url: e.target.value });
+                    setEditingCompanyUrl(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                  }}
+                  className="mt-1 w-full rounded-md border border-border bg-panel-2 px-2 py-1 text-xs text-text outline-none focus-visible:border-accent-blue"
+                />
+              ) : company.url ? (
+                <div className="mt-1 flex items-center gap-1.5">
+                  <a
+                    href={toHref(company.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-accent-blue hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" /> {getUrlDomain(company.url)}
+                  </a>
+                  <button onClick={() => setEditingCompanyUrl(true)} className="text-xs text-text-faint hover:text-text-dim">
+                    изменить
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setEditingCompanyUrl(true)}
+                  className="mt-1 text-xs text-text-faint hover:text-text-dim"
+                >
+                  + добавить сайт компании
+                </button>
+              )
+            )}
           </div>
           <div>
             <FieldLabel>Вакансия</FieldLabel>
+
             <TextField value={app.role} onChange={(v) => onUpdate('role', v)} placeholder="Вакансия" />
           </div>
         </div>
