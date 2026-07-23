@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import type { Application, ApplicationStatusHistoryEntry, ResumeVersion } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
@@ -13,6 +13,7 @@ export function useApplicationAnalytics() {
   const [history, setHistory] = useState<ApplicationStatusHistoryEntry[]>([]);
   const [resumeVersions, setResumeVersions] = useState<ResumeVersion[]>([]);
   const [loading, setLoading] = useState(true);
+  const channelSuffix = useRef(Math.random().toString(36).slice(2)).current;
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
@@ -37,7 +38,7 @@ export function useApplicationAnalytics() {
     fetchAll();
 
     const channel = supabase
-      .channel('analytics-changes')
+      .channel(`analytics-changes-${channelSuffix}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${user.id}` },

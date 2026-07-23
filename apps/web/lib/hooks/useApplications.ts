@@ -33,6 +33,7 @@ export function useApplications(stages: Stage[]) {
   const [loading, setLoading] = useState(true);
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const channelSuffix = useRef(Math.random().toString(36).slice(2)).current;
 
   /**
    * Отклики на auto_archive-этапе, у которых rejected_at относится не к
@@ -91,7 +92,7 @@ export function useApplications(stages: Stage[]) {
     fetchApplications();
 
     const channel = supabase
-      .channel('applications-changes')
+      .channel(`applications-changes-${channelSuffix}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${user.id}` },

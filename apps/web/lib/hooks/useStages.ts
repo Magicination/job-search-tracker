@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import type { Stage } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
@@ -18,6 +18,12 @@ export function useStages() {
   const { showToast } = useToast();
   const [stages, setStages] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
+  // useStages() вызывается одновременно в нескольких местах (Header.tsx —
+  // смонтирован всегда, плюс страница /applications) — если у всех
+  // экземпляров одно и то же имя канала, второй subscribe() на тот же
+  // канал падает с "cannot add postgres_changes callbacks after
+  // subscribe()". Даём каждому экземпляру хука своё уникальное имя канала.
+  const channelSuffix = useRef(Math.random().toString(36).slice(2)).current;
 
   const fetchStages = useCallback(async () => {
     if (!user) return;
@@ -57,7 +63,7 @@ export function useStages() {
     fetchStages();
 
     const channel = supabase
-      .channel('stages-changes')
+      .channel(`stages-changes-${channelSuffix}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'stages', filter: `user_id=eq.${user.id}` },

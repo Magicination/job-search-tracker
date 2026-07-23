@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import type { Company } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
@@ -11,6 +11,7 @@ export function useCompanies() {
   const { showToast } = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const channelSuffix = useRef(Math.random().toString(36).slice(2)).current;
 
   const fetchCompanies = useCallback(async () => {
     if (!user) return;
@@ -32,7 +33,7 @@ export function useCompanies() {
     fetchCompanies();
 
     const channel = supabase
-      .channel('companies-changes')
+      .channel(`companies-changes-${channelSuffix}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'companies', filter: `user_id=eq.${user.id}` },

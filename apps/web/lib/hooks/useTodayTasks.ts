@@ -13,6 +13,7 @@ export function useTodayTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const seeded = useRef(false);
+  const channelSuffix = useRef(Math.random().toString(36).slice(2)).current;
 
   const fetchTasks = useCallback(async () => {
     if (!user) return;
@@ -47,7 +48,7 @@ export function useTodayTasks() {
 
     const today = getTodayLocal();
     const channel = supabase
-      .channel('tasks-changes')
+      .channel(`tasks-changes-${channelSuffix}`)
       .on(
         'postgres_changes',
         {

@@ -5,7 +5,7 @@
 // файл), различается только имя таблицы. Вместо двух почти идентичных
 // файлов — один параметризуемый хук.
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
 import { useToast } from './useToast';
@@ -28,6 +28,7 @@ export function useDocumentVersions<T extends DocumentVersionRow>(
   const { showError } = useToast();
   const [versions, setVersions] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
+  const channelSuffix = useRef(Math.random().toString(36).slice(2)).current;
 
   const fetchVersions = useCallback(async () => {
     if (!user) return;
@@ -49,7 +50,7 @@ export function useDocumentVersions<T extends DocumentVersionRow>(
     fetchVersions();
 
     const channel = supabase
-      .channel(`${tableName}-changes`)
+      .channel(`${tableName}-changes-${channelSuffix}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: tableName, filter: `user_id=eq.${user.id}` },

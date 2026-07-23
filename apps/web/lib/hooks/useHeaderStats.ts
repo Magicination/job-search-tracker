@@ -5,7 +5,7 @@
 // stages передаются извне (useStages()), т.к. подсчёт идёт по stage_id,
 // а не по фиксированным полям.
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { calculateHeaderStageCounts, type HeaderStageCounts, type Application, type Stage } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
@@ -14,6 +14,7 @@ export function useHeaderStats(stages: Stage[]): { counts: HeaderStageCounts; lo
   const { user } = useAuth();
   const [applications, setApplications] = useState<Pick<Application, 'stage_id'>[]>([]);
   const [loading, setLoading] = useState(true);
+  const channelSuffix = useRef(Math.random().toString(36).slice(2)).current;
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
@@ -36,7 +37,7 @@ export function useHeaderStats(stages: Stage[]): { counts: HeaderStageCounts; lo
     fetchAll();
 
     const channel = supabase
-      .channel('header-stats-changes')
+      .channel(`header-stats-changes-${channelSuffix}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${user.id}` },

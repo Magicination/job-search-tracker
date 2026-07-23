@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import type { StudyHours, StudyTrack } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
@@ -24,6 +24,7 @@ export function useProgress() {
   });
   const [studyHours, setStudyHours] = useState<StudyHours[]>([]);
   const [loading, setLoading] = useState(true);
+  const channelSuffix = useRef(Math.random().toString(36).slice(2)).current;
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
@@ -68,7 +69,7 @@ export function useProgress() {
     fetchAll();
 
     const channel = supabase
-      .channel('progress-changes')
+      .channel(`progress-changes-${channelSuffix}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${user.id}` },
