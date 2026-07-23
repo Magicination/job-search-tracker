@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useApplications } from '../../lib/hooks/useApplications';
+import { useStages } from '../../lib/hooks/useStages';
 
 export default function AddFromBookmarkletPage() {
  const router = useRouter();
  const searchParams = useSearchParams();
- const { applications, addApplicationFromFields } = useApplications();
+ const { stages } = useStages();
+ const { applications, addApplicationFromFields } = useApplications(stages);
 
  const initialUrl = searchParams.get('url') ?? '';
  const [company, setCompany] = useState(searchParams.get('company') ?? '');

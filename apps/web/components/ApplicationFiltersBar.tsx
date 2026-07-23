@@ -1,15 +1,13 @@
 'use client';
 
 import type { ApplicationFilters } from '../lib/hooks/useApplicationFilters';
-import type { ApplicationStatus } from '@job-search-tracker/shared';
-import { APPLICATION_STATUS_LABELS } from '@job-search-tracker/shared';
-
-const STATUS_OPTIONS: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
+import type { Stage } from '@job-search-tracker/shared';
 
 export function ApplicationFiltersBar({
   filters,
   setFilters,
   availableSources,
+  stages,
   hasActiveFilters,
   resetFilters,
   resultCount,
@@ -17,12 +15,13 @@ export function ApplicationFiltersBar({
   filters: ApplicationFilters;
   setFilters: (updater: (prev: ApplicationFilters) => ApplicationFilters) => void;
   availableSources: string[];
+  stages: Stage[];
   hasActiveFilters: boolean;
   resetFilters: () => void;
   resultCount: number;
 }) {
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border-soft bg-panel p-3">
+    <div className="sticky top-16 z-[5] flex flex-col gap-2 rounded-lg border border-border-soft bg-panel/95 p-3 backdrop-blur">
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={filters.search}
@@ -32,16 +31,14 @@ export function ApplicationFiltersBar({
         />
 
         <select
-          value={filters.status}
-          onChange={(e) =>
-            setFilters((prev) => ({ ...prev, status: e.target.value as ApplicationStatus | 'all' }))
-          }
+          value={filters.stageId}
+          onChange={(e) => setFilters((prev) => ({ ...prev, stageId: e.target.value }))}
           className="rounded-lg border border-border bg-panel-2 px-2 py-2 text-sm text-text outline-none focus-visible:border-accent-blue"
         >
-          <option value="all">Все статусы</option>
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>
-              {APPLICATION_STATUS_LABELS[s]}
+          <option value="all">Все этапы</option>
+          {stages.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
             </option>
           ))}
         </select>

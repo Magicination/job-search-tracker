@@ -6,6 +6,7 @@ import { useAuth } from '../lib/hooks/useAuth';
 
 const TABS = [
   { href: '/applications', label: 'Отклики' },
+  { href: '/resumes', label: 'Резюме' },
   { href: '/analytics', label: 'Аналитика' },
 ] as const;
 
@@ -17,7 +18,7 @@ export function NavTabs() {
 
   return (
     <nav className="relative border-b border-border-soft bg-bg">
-      <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4">
+      <div className="mx-auto flex max-w-[1600px] gap-1 overflow-x-auto px-4">
         {TABS.map((tab) => {
           const active = pathname === tab.href;
           return (

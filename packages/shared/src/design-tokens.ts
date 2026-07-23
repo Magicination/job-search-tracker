@@ -35,14 +35,6 @@ export const SLOT_TYPE_COLORS = {
   rest: COLORS.textFaint,
 } as const;
 
-// Цвет по статусу отклика — см. 02-screens-web.md, раздел /applications.
-export const APPLICATION_STATUS_COLORS = {
-  applied: COLORS.accentBlue,
-  interview: COLORS.accentAmber,
-  offer: COLORS.accentTeal,
-  rejected: COLORS.accentCoral,
-} as const;
-
 // Вариант темы для компонента Badge — в отличие от *_COLORS выше (фиксированный
 // hex для inline-стилей вроде графиков), эти значения резолвятся в CSS-классы,
 // завязанные на var(--accent-*), и автоматически меняются между тёмной и
@@ -67,16 +59,6 @@ export const SLOT_TYPE_BADGE_VARIANT: Record<
   rest: 'neutral',
 };
 
-export const APPLICATION_STATUS_BADGE_VARIANT: Record<
-  'applied' | 'interview' | 'offer' | 'rejected',
-  BadgeVariant
-> = {
-  applied: 'blue',
-  interview: 'amber',
-  offer: 'teal',
-  rejected: 'coral',
-};
-
 export const TASK_CATEGORY_LABELS = {
   job: 'Поиск работы',
   study: 'SQL / аналитика',
@@ -90,13 +72,6 @@ export const SLOT_TYPE_LABELS = {
   eng: 'Английский',
   case: 'Кейсы / собеседования',
   rest: 'Отдых',
-} as const;
-
-export const APPLICATION_STATUS_LABELS = {
-  applied: 'Отправлен',
-  interview: 'Интервью',
-  offer: 'Оффер',
-  rejected: 'Отклонён',
 } as const;
 
 export const DAY_OF_WEEK_LABELS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const;

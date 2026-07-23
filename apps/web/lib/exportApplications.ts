@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatusHistoryEntry } from '@job-search-tracker/shared';
+import type { Application, ApplicationStatusHistoryEntry, Stage } from '@job-search-tracker/shared';
 
 function getIsoWeekKey(dateStr: string): string {
   const d = new Date(dateStr);
@@ -18,11 +18,10 @@ function csvEscape(value: string | null | undefined): string {
   return str;
 }
 
-const COLUMNS: { key: keyof Application; label: string }[] = [
+const TEXT_COLUMNS: { key: keyof Application; label: string }[] = [
   { key: 'company', label: 'Компания' },
   { key: 'role', label: 'Вакансия' },
   { key: 'source', label: 'Источник' },
-  { key: 'status', label: 'Статус' },
   { key: 'applied_date', label: 'Дата отклика' },
   { key: 'salary', label: 'Зарплата' },
   { key: 'experience_required', label: 'Опыт' },
@@ -31,10 +30,11 @@ const COLUMNS: { key: keyof Application; label: string }[] = [
   { key: 'created_at', label: 'Создано' },
 ];
 
-export function exportApplicationsToCsv(applications: Application[]) {
-  const header = COLUMNS.map((c) => csvEscape(c.label)).join(',');
+export function exportApplicationsToCsv(applications: Application[], stages: Stage[]) {
+  const stageNameById = new Map(stages.map((s) => [s.id, s.name]));
+  const header = ['Этап', ...TEXT_COLUMNS.map((c) => c.label)].map(csvEscape).join(',');
   const rows = applications.map((app) =>
-    COLUMNS.map((c) => csvEscape(app[c.key] as string | null)).join(',')
+    [csvEscape(stageNameById.get(app.stage_id) ?? ''), ...TEXT_COLUMNS.map((c) => csvEscape(app[c.key] as string | null))].join(',')
   );
   const csv = [header, ...rows].join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -48,31 +48,38 @@ export function exportApplicationsToCsv(applications: Application[]) {
   URL.revokeObjectURL(url);
 }
 
-export function exportWeeklySummaryToCsv(applications: Application[], history: ApplicationStatusHistoryEntry[]) {
-  const weeks = new Map<string, { sent: number; interviewOrBetter: Set<string> }>();
+export function exportWeeklySummaryToCsv(
+  applications: Application[],
+  history: ApplicationStatusHistoryEntry[],
+  stages: Stage[]
+) {
+  const orderedStages = [...stages].sort((a, b) => a.position - b.position);
+  const firstStageId = orderedStages[0]?.id;
+
+  const weeks = new Map<string, { sent: number; movedForward: Set<string> }>();
 
   for (const app of applications) {
     if (!app.applied_date) continue;
     const key = getIsoWeekKey(app.applied_date);
-    if (!weeks.has(key)) weeks.set(key, { sent: 0, interviewOrBetter: new Set() });
+    if (!weeks.has(key)) weeks.set(key, { sent: 0, movedForward: new Set() });
     weeks.get(key)!.sent += 1;
   }
 
   for (const h of history) {
-    if (h.to_status === 'interview' || h.to_status === 'offer') {
+    if (firstStageId && h.to_stage_id !== firstStageId) {
       const app = applications.find((a) => a.id === h.application_id);
       if (app?.applied_date) {
         const key = getIsoWeekKey(app.applied_date);
-        weeks.get(key)?.interviewOrBetter.add(app.id);
+        weeks.get(key)?.movedForward.add(app.id);
       }
     }
   }
 
   const rows = Array.from(weeks.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([week, d]) => `${week},${d.sent},${d.interviewOrBetter.size}`);
+    .map(([week, d]) => `${week},${d.sent},${d.movedForward.size}`);
 
-  const csv = ['Неделя,Отправлено,Дошло до интервью+', ...rows].join('\n');
+  const csv = ['Неделя,Отправлено,Получили любое движение дальше', ...rows].join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

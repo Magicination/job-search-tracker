@@ -1,12 +1,19 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { getDocumentDownloadUrl } from '../lib/documentStorage';
+import { Paperclip, X, Eye } from 'lucide-react';
 
 interface DocumentVersionLike {
   id: string;
   name: string;
   file_name: string;
+  file_path?: string | null;
   body_text?: string;
+}
+
+function isPdf(fileName: string): boolean {
+  return fileName.toLowerCase().endsWith('.pdf');
 }
 
 export function DocumentVersionsPanel({
@@ -30,7 +37,9 @@ export function DocumentVersionsPanel({
   const [name, setName] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [bodyText, setBodyText] = useState('');
-  const [open, setOpen] = useState(defaultOpen ?? versions.length === 0);
+  const [open, setOpen] = useState(defaultOpen ?? true);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFileId, setPreviewFileId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleAdd() {
@@ -40,6 +49,20 @@ export function DocumentVersionsPanel({
     setFile(null);
     setBodyText('');
     if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  async function handlePreview(v: DocumentVersionLike) {
+    if (!v.file_path) return;
+    if (previewFileId === v.id) {
+      setPreviewFileId(null);
+      setPreviewUrl(null);
+      return;
+    }
+    const url = await getDocumentDownloadUrl(v.file_path);
+    if (url) {
+      setPreviewUrl(url);
+      setPreviewFileId(v.id);
+    }
   }
 
   return (
@@ -60,21 +83,50 @@ export function DocumentVersionsPanel({
             <p className="text-xs text-text-faint">{emptyHint}</p>
           ) : (
             versions.map((v) => (
-              <div key={v.id} className="flex items-start justify-between gap-2 rounded-md bg-panel-2 px-2 py-1.5">
-                <div className="flex flex-col">
-                  <span className="text-sm text-text">{v.name}</span>
-                  {v.file_name && <span className="text-xs text-text-faint">📎 {v.file_name}</span>}
-                  {v.body_text && (
-                    <span className="mt-1 max-w-md text-xs text-text-faint line-clamp-2">{v.body_text}</span>
-                  )}
+              <div key={v.id} className="rounded-md bg-panel-2 px-2 py-1.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-text">{v.name}</span>
+                    {v.file_name && (
+                      <span className="flex items-center gap-1 text-xs text-text-faint">
+                        <Paperclip className="h-3 w-3" /> {v.file_name}
+                      </span>
+                    )}
+                    {v.body_text && (
+                      <span className="mt-1 max-w-md text-xs text-text-faint line-clamp-2">{v.body_text}</span>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {v.file_path && isPdf(v.file_name) && (
+                      <button
+                        onClick={() => handlePreview(v)}
+                        title="Предпросмотр PDF"
+                        className="text-text-faint hover:text-accent-blue"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onDelete(v.id)}
+                      aria-label="Удалить версию"
+                      className="text-text-faint hover:text-accent-coral"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => onDelete(v.id)}
-                  aria-label="Удалить версию"
-                  className="shrink-0 text-text-faint hover:text-accent-coral"
-                >
-                  ✕
-                </button>
+                {previewFileId === v.id && previewUrl && (
+                  <iframe
+                    src={previewUrl}
+                    title={`Предпросмотр: ${v.name}`}
+                    className="mt-2 h-[70vh] w-full rounded-md border border-border"
+                  />
+                )}
+                {previewFileId === v.id && !isPdf(v.file_name) && (
+                  <p className="mt-2 text-xs text-text-faint">
+                    Предпросмотр в браузере доступен только для PDF — этот файл можно только скачать.
+                  </p>
+                )}
               </div>
             ))
           )}
@@ -110,7 +162,7 @@ export function DocumentVersionsPanel({
           )}
           <p className="text-xs text-text-faint">
             Файл необязателен — можно просто завести название для отслеживания, а файл прикрепить позже.
-            Поддерживаются PDF, DOC, DOCX, RTF, ODT, до 10 МБ.
+            Поддерживаются PDF, DOC, DOCX, RTF, ODT, до 10 МБ. Предпросмотр в браузере — только для PDF.
           </p>
         </div>
       )}

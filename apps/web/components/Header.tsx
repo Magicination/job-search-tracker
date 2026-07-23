@@ -1,10 +1,20 @@
 'use client';
 
 import Link from 'next/link';
+import type { Stage } from '@job-search-tracker/shared';
 import { useAuth } from '../lib/hooks/useAuth';
 import { useHeaderStats } from '../lib/hooks/useHeaderStats';
+import { useStages } from '../lib/hooks/useStages';
 import { ThemeToggle } from './ThemeToggle';
 import { supabase } from '../lib/supabase';
+
+const TEXT_CLASS: Record<Stage['color'], string> = {
+  blue: 'text-accent-blue',
+  amber: 'text-accent-amber',
+  teal: 'text-accent-teal',
+  coral: 'text-accent-coral',
+  neutral: 'text-text-faint',
+};
 
 function StatPill({
   label,
@@ -30,21 +40,29 @@ function StatPill({
 
 export function Header() {
   const { user } = useAuth();
-  const { applied, interview, offer, rejected } = useHeaderStats();
+  const { stages } = useStages();
+  const { counts } = useHeaderStats(stages);
 
   if (!user) return null;
 
+  const orderedStages = [...stages].sort((a, b) => a.position - b.position);
+
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-bg/95 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 overflow-hidden">
+      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 overflow-hidden">
         <div className="flex items-center gap-2 min-w-0">
           <span className="truncate text-sm text-text-dim">{user.email}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <StatPill label="отправлено" value={applied} accentClass="text-accent-blue" href="/applications?status=applied" />
-          <StatPill label="интервью" value={interview} accentClass="text-accent-amber" href="/applications?status=interview" />
-          <StatPill label="оффер" value={offer} accentClass="text-accent-teal" href="/applications?status=offer" />
-          <StatPill label="отклонён" value={rejected} accentClass="text-accent-coral" href="/applications?status=rejected" />
+          {orderedStages.map((stage) => (
+            <StatPill
+              key={stage.id}
+              label={stage.name.toLowerCase()}
+              value={counts[stage.id] ?? 0}
+              accentClass={TEXT_CLASS[stage.color]}
+              href={`/applications?stage=${stage.id}`}
+            />
+          ))}
           <ThemeToggle />
           <button
             onClick={() => supabase.auth.signOut()}
@@ -57,4 +75,3 @@ export function Header() {
     </header>
   );
 }
-

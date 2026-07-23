@@ -1,36 +1,32 @@
 'use client';
 
-// Хук агрегирует данные для компактных счётчиков статусов в шапке
-// (applied/screen/interview/offer) и поддерживает их актуальность через
-// realtime-подписку на applications. Раньше здесь были streak и "задач за
-// неделю" — убраны вместе с экраном "Сегодня".
+// Хук агрегирует данные для компактных счётчиков этапов в шапке и
+// поддерживает их актуальность через realtime-подписку на applications.
+// stages передаются извне (useStages()), т.к. подсчёт идёт по stage_id,
+// а не по фиксированным полям.
 
 import { useEffect, useState, useCallback } from 'react';
-import {
-  calculateHeaderStatusCounts,
-  type HeaderStatusCounts,
-  type Application,
-} from '@job-search-tracker/shared';
+import { calculateHeaderStageCounts, type HeaderStageCounts, type Application, type Stage } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
 
-export function useHeaderStats(): HeaderStatusCounts & { loading: boolean } {
+export function useHeaderStats(stages: Stage[]): { counts: HeaderStageCounts; loading: boolean } {
   const { user } = useAuth();
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [applications, setApplications] = useState<Pick<Application, 'stage_id'>[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
     const { data, error } = await supabase
       .from('applications')
-      .select('status')
+      .select('stage_id')
       .eq('user_id', user.id);
 
     // Тихо игнорируем ошибку здесь, не обнуляя то, что уже показано: шапка
     // видна на каждом экране, всплывающее уведомление при сетевом сбое
     // было бы навязчивым.
     if (!error && data) {
-      setApplications(data as Application[]);
+      setApplications(data as Pick<Application, 'stage_id'>[]);
     }
     setLoading(false);
   }, [user]);
@@ -53,5 +49,5 @@ export function useHeaderStats(): HeaderStatusCounts & { loading: boolean } {
     };
   }, [user, fetchAll]);
 
-  return { ...calculateHeaderStatusCounts(applications), loading };
+  return { counts: calculateHeaderStageCounts(applications as Application[], stages), loading };
 }

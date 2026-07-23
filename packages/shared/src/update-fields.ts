@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatus } from './types';
+import type { Application } from './types';
 
 /** Константы debounce для всех текстовых полей (500ms) */
 export const DEBOUNCE_MS = 500;

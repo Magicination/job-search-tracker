@@ -1,11 +1,25 @@
 'use client';
 
-import type { Application, ApplicationStatus } from '@job-search-tracker/shared';
-import { APPLICATION_STATUS_LABELS, type StatusHistoryPoint } from '@job-search-tracker/shared';
+import type { Application, Stage, StatusHistoryPoint } from '@job-search-tracker/shared';
 import { TriangleAlert } from 'lucide-react';
 
-const STATUS_ORDER: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
 const STALE_DAYS_THRESHOLD = 7;
+
+const BORDER_L_CLASS: Record<Stage['color'], string> = {
+  blue: 'border-l-accent-blue',
+  amber: 'border-l-accent-amber',
+  teal: 'border-l-accent-teal',
+  coral: 'border-l-accent-coral',
+  neutral: 'border-l-text-faint',
+};
+
+const HOVER_CLASS: Record<Stage['color'], string> = {
+  blue: 'hover:border-accent-blue/70 hover:bg-accent-blue/5',
+  amber: 'hover:border-accent-amber/60 hover:bg-accent-amber/5',
+  teal: 'hover:border-accent-teal/60 hover:bg-accent-teal/5',
+  coral: 'hover:border-accent-coral/60 hover:bg-accent-coral/5',
+  neutral: 'hover:border-border-soft hover:bg-panel-2',
+};
 
 function daysSince(dateStr: string | null): number | null {
   if (!dateStr) return null;
@@ -15,12 +29,11 @@ function daysSince(dateStr: string | null): number | null {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
-/**
- * Мини-таймлайн статусов: принимает историю статусов и показывает последние переходы.
- */
-function StatusTimeline({ history }: { history?: StatusHistoryPoint[] }) {
+/** Мини-таймлайн: принимает историю переходов между этапами и показывает последний. */
+function StageTimeline({ history, stages }: { history?: StatusHistoryPoint[]; stages: Stage[] }) {
   if (!history || history.length === 0) return null;
 
+  const nameById = new Map(stages.map((s) => [s.id, s.name]));
   const sorted = [...history].sort(
     (a, b) => new Date(b.changed_at).getTime() - new Date(a.changed_at).getTime()
   );
@@ -30,12 +43,8 @@ function StatusTimeline({ history }: { history?: StatusHistoryPoint[] }) {
   const dateOnly = latest.changed_at
     ? new Date(latest.changed_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
     : '';
-  const fromText =
-    latest.from_status !== null
-      ? APPLICATION_STATUS_LABELS[latest.from_status as keyof typeof APPLICATION_STATUS_LABELS] || latest.from_status
-      : '—';
-  const toText =
-    APPLICATION_STATUS_LABELS[latest.to_status as keyof typeof APPLICATION_STATUS_LABELS] || latest.to_status;
+  const fromText = latest.from_stage_id !== null ? nameById.get(latest.from_stage_id) ?? '—' : '—';
+  const toText = nameById.get(latest.to_stage_id) ?? '—';
 
   if (sorted.length > 1) {
     const prev = sorted[1];
@@ -58,8 +67,9 @@ function StatusTimeline({ history }: { history?: StatusHistoryPoint[] }) {
 
 export function KanbanCard({
   app,
+  stages,
   onOpen,
-  onStatusChange,
+  onStageChange,
   dimmed,
   onDragStartCard,
   onDragEndCard,
@@ -67,16 +77,20 @@ export function KanbanCard({
   saving,
 }: {
   app: Application;
+  stages: Stage[];
   onOpen: () => void;
-  onStatusChange: (status: ApplicationStatus) => void;
+  onStageChange: (stageId: string) => void;
   dimmed?: boolean;
   onDragStartCard?: () => void;
   onDragEndCard?: () => void;
   history?: StatusHistoryPoint[];
   saving?: boolean;
 }) {
-  const idx = STATUS_ORDER.indexOf(app.status);
-  const days = app.status === 'applied' ? daysSince(app.applied_date) : null;
+  const orderedStages = [...stages].sort((a, b) => a.position - b.position);
+  const idx = orderedStages.findIndex((s) => s.id === app.stage_id);
+  const currentStage = orderedStages[idx];
+  const isFirstStage = idx === 0;
+  const days = isFirstStage ? daysSince(app.applied_date) : null;
   const isStale = days !== null && days >= STALE_DAYS_THRESHOLD;
 
   function handleDragStart(e: React.DragEvent) {
@@ -85,21 +99,16 @@ export function KanbanCard({
     onDragStartCard?.();
   }
 
+  const borderColorClass = currentStage ? BORDER_L_CLASS[currentStage.color] : BORDER_L_CLASS.neutral;
+  const hoverClass = currentStage ? HOVER_CLASS[currentStage.color] : HOVER_CLASS.neutral;
+
   return (
     <div
       draggable
       onDragStart={handleDragStart}
       onDragEnd={() => onDragEndCard?.()}
       className={`cursor-grab select-none rounded-lg border border-l-4 p-3 text-left shadow-sm transition-all hover:shadow-md active:cursor-grabbing ${dimmed ? 'opacity-40 shadow-lg' : ''} ${
-        isStale
-          ? 'border-accent-amber/50 border-l-accent-amber bg-accent-amber/5'
-          : app.status === 'interview'
-          ? 'border-border-soft border-l-accent-amber bg-panel hover:border-accent-amber/60 hover:bg-accent-amber/5'
-          : app.status === 'offer'
-          ? 'border-border-soft border-l-accent-teal bg-panel hover:border-accent-teal/60 hover:bg-accent-teal/5'
-          : app.status === 'rejected'
-          ? 'border-border-soft border-l-accent-coral bg-panel hover:border-accent-coral/60 hover:bg-accent-coral/5'
-          : 'border-border-soft border-l-accent-blue bg-panel hover:border-accent-blue/70 hover:bg-accent-blue/5'
+        isStale ? 'border-accent-amber/50 border-l-accent-amber bg-accent-amber/5' : `border-border-soft bg-panel ${borderColorClass} ${hoverClass}`
       }`}
     >
       <div className="relative">
@@ -123,29 +132,29 @@ export function KanbanCard({
         </button>
 
         {isStale && (
-          <p className="mt-1 flex items-center gap-1 text-xs text-accent-amber" title={`Долго без изменения статуса: ${days} дн.`}>
+          <p className="mt-1 flex items-center gap-1 text-xs text-accent-amber" title={`Долго без изменения этапа: ${days} дн.`}>
             <TriangleAlert className="h-3 w-3" /> {days} дн. без ответа
           </p>
         )}
 
         <div className="mt-1">
-          <StatusTimeline history={history} />
+          <StageTimeline history={history} stages={stages} />
         </div>
 
         <div className="mt-2 flex items-center justify-between">
           <button
             disabled={idx <= 0}
-            onClick={() => idx > 0 && onStatusChange(STATUS_ORDER[idx - 1])}
+            onClick={() => idx > 0 && onStageChange(orderedStages[idx - 1].id)}
             className="rounded px-1.5 py-0.5 text-xs text-text-faint hover:text-text disabled:opacity-20"
-            title="Вернуть на предыдущий статус"
+            title="Вернуть на предыдущий этап"
           >
             ‹
           </button>
           <button
-            disabled={idx >= STATUS_ORDER.length - 1}
-            onClick={() => idx < STATUS_ORDER.length - 1 && onStatusChange(STATUS_ORDER[idx + 1])}
+            disabled={idx >= orderedStages.length - 1}
+            onClick={() => idx < orderedStages.length - 1 && onStageChange(orderedStages[idx + 1].id)}
             className="rounded px-1.5 py-0.5 text-xs text-text-faint hover:text-text disabled:opacity-20"
-            title="Продвинуть на следующий статус"
+            title="Продвинуть на следующий этап"
           >
             ›
           </button>

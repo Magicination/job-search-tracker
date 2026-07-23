@@ -30,11 +30,23 @@ export interface ScheduleSlot {
   slot_type: SlotType;
 }
 
-export type ApplicationStatus =
-  | 'applied'
-  | 'interview'
-  | 'offer'
-  | 'rejected';
+import type { BadgeVariant } from './design-tokens';
+
+/**
+ * Этап канбана — раньше был жёсткий enum ApplicationStatus с 4
+ * значениями, теперь свой набор строк-этапов на пользователя (название,
+ * цвет, порядок). auto_archive=true — этап "проигрышный": отклик
+ * остаётся на доске до конца дня, на следующий день лениво уходит в архив.
+ */
+export interface Stage {
+  id: string;
+  user_id: string;
+  name: string;
+  color: BadgeVariant;
+  position: number;
+  auto_archive: boolean;
+  created_at: string;
+}
 
 export interface Application {
   id: string;
@@ -44,11 +56,12 @@ export interface Application {
   source: string;
   applied_date: string | null;
   applied_at: string | null; // точное время отклика (timestamptz), для анализа дня недели/времени суток
-  status: ApplicationStatus;
+  stage_id: string;
   note: string;
   vacancy_url: string | null;
   company_id: string | null; // ссылка на запись в companies — заполняется автоматически по названию
-  archived: boolean; // отклик скрыт из основной доски (авто при отказе, вручную при "удалении")
+  archived: boolean; // отклик скрыт из основной доски (вручную, или лениво — на след. день после auto_archive-этапа)
+  rejected_at: string | null; // момент перехода на auto_archive-этап — до конца этого дня отклик ещё виден на доске
   resume_version_id: string | null; // ссылка на использованную версию резюме
   cover_letter_version_id: string | null; // ссылка на использованную версию сопроводительного
   salary: string; // свободный текст — диапазон/валюта вводятся пользователем как есть
@@ -82,15 +95,15 @@ export interface ApplicationStatusHistoryEntry {
   id: string;
   user_id: string;
   application_id: string;
-  from_status: ApplicationStatus | null; // null для самой первой записи
-  to_status: ApplicationStatus;
+  from_stage_id: string | null; // null для самой первой записи
+  to_stage_id: string;
   changed_at: string;
 }
 
 /** Тип для отображения истории статусов в мини-таймлайне */
 export interface StatusHistoryPoint {
-  from_status: string | null;
-  to_status: string;
+  from_stage_id: string | null;
+  to_stage_id: string;
   changed_at: string;
 }
 

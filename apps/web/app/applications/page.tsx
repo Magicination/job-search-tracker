@@ -1,40 +1,38 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useStages } from '../../lib/hooks/useStages';
 import { useApplications } from '../../lib/hooks/useApplications';
 import { useResumeVersions } from '../../lib/hooks/useResumeVersions';
 import { useApplicationFilters } from '../../lib/hooks/useApplicationFilters';
 import { useApplicationHistory } from '../../lib/hooks/useApplicationHistory';
 import { useCompanies } from '../../lib/hooks/useCompanies';
 import { KanbanBoard } from '../../components/KanbanBoard';
-import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
 import { ApplicationFiltersBar } from '../../components/ApplicationFiltersBar';
 import { BookmarkletCard } from '../../components/BookmarkletCard';
 import { ArchiveSection } from '../../components/ArchiveSection';
 import { SkeletonList } from '../../components/Skeleton';
 import { exportApplicationsToCsv, exportWeeklySummaryToCsv } from '../../lib/exportApplications';
-import { useSearchParams } from 'next/navigation';
 
-/** @type definitions and exports are handled by the main component */
 export default function ApplicationsPage() {
+  const { stages, addStage, updateStage: updateStageDef, swapStagePositions, deleteStage } = useStages();
   const {
     applications,
     loading,
     savingIds,
     addApplication,
     updateField,
-    updateStatus,
+    updateStage,
     updateAppliedDate,
     updateAppliedTime,
     deleteApplication,
     restoreApplication,
     permanentlyDeleteApplication,
-  } = useApplications();
-  const { versions: resumeVersions, addVersion: addResumeVersion, deleteVersion: deleteResumeVersion } =
-    useResumeVersions();
+  } = useApplications(stages);
+  const { versions: resumeVersions } = useResumeVersions();
 
-  const { history, loading: historyLoading } = useApplicationHistory();
+  const { history } = useApplicationHistory();
   const { companies, findOrCreateCompany, updateCompany } = useCompanies();
 
   const activeApplications = applications.filter((a) => !a.archived);
@@ -59,9 +57,9 @@ export default function ApplicationsPage() {
 
   const searchParams = useSearchParams();
   useEffect(() => {
-    const statusParam = searchParams.get('status');
-    if (statusParam) {
-      setFilters((f) => ({ ...f, status: statusParam as any }));
+    const stageParam = searchParams.get('stage');
+    if (stageParam) {
+      setFilters((f) => ({ ...f, stageId: stageParam }));
     }
   }, [searchParams, setFilters]);
 
@@ -78,6 +76,7 @@ export default function ApplicationsPage() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleAddEmpty() {
@@ -91,13 +90,12 @@ export default function ApplicationsPage() {
         <h1 className="text-lg font-semibold text-text">Отклики</h1>
       </div>
 
-      {/* Main actions area */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-text-dim">Добавьте отклик вручную или автоматически через букмарклет.</p>
         <div className="flex flex-wrap gap-2">
           <BookmarkletCard />
           <button
-            onClick={() => exportApplicationsToCsv(applications)}
+            onClick={() => exportApplicationsToCsv(applications, stages)}
             disabled={applications.length === 0}
             className="shrink-0 rounded-lg border border-border px-4 py-2.5 text-sm text-text-dim transition hover:border-border-soft disabled:opacity-50"
             title="Скачать все отклики в CSV"
@@ -105,7 +103,7 @@ export default function ApplicationsPage() {
             Экспорт
           </button>
           <button
-            onClick={() => exportWeeklySummaryToCsv(applications, history)}
+            onClick={() => exportWeeklySummaryToCsv(applications, history, stages)}
             disabled={applications.length === 0}
             className="shrink-0 rounded-lg border border-border px-4 py-2.5 text-sm text-text-dim transition hover:border-border-soft disabled:opacity-50"
             title="Сводка по неделям: сколько отправлено и сколько дошло до интервью"
@@ -121,19 +119,12 @@ export default function ApplicationsPage() {
         </div>
       </div>
 
-      <DocumentVersionsPanel
-        title="Версии резюме"
-        emptyHint="Создайте версию, если планируете тестировать разные варианты резюме — потом на странице «Аналитика» будет видно, какая версия даёт лучшую конверсию."
-        versions={resumeVersions}
-        onAdd={addResumeVersion}
-        onDelete={deleteResumeVersion}
-      />
-
       {!loading && applications.length > 0 && (
         <ApplicationFiltersBar
           filters={filters}
           setFilters={setFilters}
           availableSources={availableSources}
+          stages={stages}
           hasActiveFilters={hasActiveFilters}
           resetFilters={resetFilters}
           resultCount={filtered.length}
@@ -156,6 +147,7 @@ export default function ApplicationsPage() {
         <KanbanBoard
           applications={filtered}
           resumeVersions={resumeVersions}
+          stages={stages}
           history={history}
           savingIds={savingIds}
           companies={companies}
@@ -163,16 +155,21 @@ export default function ApplicationsPage() {
           onUpdate={handleUpdate}
           onDateChange={updateAppliedDate}
           onTimeChange={updateAppliedTime}
-          onStatusChange={updateStatus}
+          onStageChange={updateStage}
           onDelete={deleteApplication}
           autoOpenId={autoOpenId}
           onAutoOpenHandled={() => setAutoOpenId(null)}
+          onAddStage={addStage}
+          onUpdateStage={updateStageDef}
+          onSwapStages={swapStagePositions}
+          onDeleteStage={deleteStage}
         />
       )}
 
       <ArchiveSection
         archivedApplications={archivedApplications}
         companies={companies}
+        stages={stages}
         onRestore={restoreApplication}
         onPermanentDelete={permanentlyDeleteApplication}
         onUpdateCompany={updateCompany}

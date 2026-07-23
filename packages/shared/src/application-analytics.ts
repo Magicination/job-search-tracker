@@ -2,83 +2,79 @@
 // по дню недели/времени суток/источнику. Цель — дать данные для ответа на
 // вопрос "когда и как откликаться эффективнее", а не просто хранить статус.
 //
-// Все функции — чистые, принимают сырые записи applications +
-// application_status_history и возвращают агрегаты. Не зависят от Supabase —
-// можно покрыть тестами без БД.
+// С переходом на собственные этапы канбана (Stage вместо жёсткого enum
+// ApplicationStatus) все функции здесь принимают stages: Stage[] и
+// работают по stage_id, а не по фиксированным полям applied/interview/
+// offer/rejected. "Первый этап" (минимальный position) — это то, во что
+// раньше упирался status==='applied': начальная точка воронки, точка
+// отсчёта "давно без ответа" и т.д. Все функции по-прежнему чистые, не
+// зависят от Supabase.
 
-import type { Application, ApplicationStatus, ApplicationStatusHistoryEntry } from './types';
+import type { Application, ApplicationStatusHistoryEntry, Stage } from './types';
+
+function getFirstStage(stages: Stage[]): Stage | null {
+  if (stages.length === 0) return null;
+  return [...stages].sort((a, b) => a.position - b.position)[0];
+}
 
 // ============================================================
 // Воронка конверсии
 // ============================================================
 
 export interface ConversionFunnel {
-  applied: number;
-  interview: number;
-  offer: number;
-  rejected: number;
-  /** % от applied, кто хотя бы раз дошёл до interview */
-  interviewRate: number;
-  /** % от applied, кто получил offer */
-  offerRate: number;
+  /** Счётчик по каждому этапу — сколько откликов сейчас находится на нём (текущий срез). */
+  counts: Record<string, number>;
+  total: number;
+  /** % от total, кто хотя бы раз покинул первый этап (то есть получил хоть какое-то движение). */
+  responseRate: number;
 }
 
 /**
- * Считает воронку по ТЕКУЩЕМУ статусу каждого отклика (простой срез "что есть сейчас").
- * Для понимания "сколько вообще доходило до интервью, даже если потом отказали"
- * используйте calculateFunnelFromHistory — она смотрит на историю переходов,
- * а не только на финальное состояние.
+ * Считает воронку по ТЕКУЩЕМУ этапу каждого отклика (простой срез "что есть
+ * сейчас"). Для понимания "сколько вообще когда-либо доходило до этапа X,
+ * даже если потом ушли дальше" используйте calculateFunnelFromHistory — она
+ * смотрит на историю переходов, а не только на финальное состояние.
  */
-export function calculateConversionFunnel(applications: Application[]): ConversionFunnel {
+export function calculateConversionFunnel(applications: Application[], stages: Stage[]): ConversionFunnel {
   const total = applications.length;
-  const counts: Record<ApplicationStatus, number> = {
-    applied: 0,
-    interview: 0,
-    offer: 0,
-    rejected: 0,
-  };
+  const counts: Record<string, number> = {};
+  for (const stage of stages) counts[stage.id] = 0;
+
   for (const app of applications) {
-    counts[app.status] += 1;
+    if (app.stage_id in counts) counts[app.stage_id] += 1;
   }
 
+  const firstStage = getFirstStage(stages);
+  const responded = firstStage ? total - (counts[firstStage.id] ?? 0) : 0;
   const pct = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
 
-  return {
-    ...counts,
-    interviewRate: pct(counts.interview + counts.offer),
-    offerRate: pct(counts.offer),
-  };
+  return { counts, total, responseRate: pct(responded) };
 }
 
 /**
  * Воронка на основе истории переходов: считает, сколько откликов хотя бы
- * ОДНАЖДЫ побывали в каждом статусе — отклик, который дошёл до interview
- * и потом был rejected, всё равно засчитывается в interview-этапе.
- * Это честнее для анализа "что работает", чем срез по текущему статусу,
- * где такой отклик выглядел бы просто как "rejected" без следа того,
- * что он реально дошёл до интервью.
+ * ОДНАЖДЫ побывали на каждом этапе — отклик, который дошёл до "Интервью"
+ * и потом ушёл на "Отклонён", всё равно засчитывается на этапе "Интервью".
+ * Это честнее для анализа "что работает", чем срез по текущему этапу.
  */
 export function calculateFunnelFromHistory(
-  history: ApplicationStatusHistoryEntry[]
-): Record<ApplicationStatus, number> {
-  const reachedByApplication = new Map<string, Set<ApplicationStatus>>();
+  history: ApplicationStatusHistoryEntry[],
+  stages: Stage[]
+): Record<string, number> {
+  const reachedByApplication = new Map<string, Set<string>>();
 
   for (const entry of history) {
-    const set = reachedByApplication.get(entry.application_id) ?? new Set<ApplicationStatus>();
-    set.add(entry.to_status);
+    const set = reachedByApplication.get(entry.application_id) ?? new Set<string>();
+    set.add(entry.to_stage_id);
     reachedByApplication.set(entry.application_id, set);
   }
 
-  const counts: Record<ApplicationStatus, number> = {
-    applied: 0,
-    interview: 0,
-    offer: 0,
-    rejected: 0,
-  };
+  const counts: Record<string, number> = {};
+  for (const stage of stages) counts[stage.id] = 0;
 
   for (const reached of reachedByApplication.values()) {
-    for (const status of reached) {
-      counts[status] += 1;
+    for (const stageId of reached) {
+      if (stageId in counts) counts[stageId] += 1;
     }
   }
 
@@ -90,33 +86,24 @@ export function calculateFunnelFromHistory(
 // ============================================================
 
 /**
- * Счётчики по текущему статусу для компактного отображения в шапке —
- * сколько откликов сейчас в каждой стадии. В отличие от воронки выше, здесь
- * считается ТЕКУЩЕЕ состояние (срез "прямо сейчас"), не история — в шапке
- * нужно видеть, сколько у вас сейчас открытых процессов на каждой стадии,
- * не сколько всего когда-либо побывало в этой стадии.
+ * Счётчики по текущему этапу для компактного отображения в шапке —
+ * сколько откликов сейчас в каждой стадии.
  */
-export interface HeaderStatusCounts {
-  applied: number;
-  interview: number;
-  offer: number;
-  rejected: number;
-}
+export type HeaderStageCounts = Record<string, number>;
 
-export function calculateHeaderStatusCounts(applications: Application[]): HeaderStatusCounts {
-  const counts: HeaderStatusCounts = { applied: 0, interview: 0, offer: 0, rejected: 0 };
+export function calculateHeaderStageCounts(applications: Application[], stages: Stage[]): HeaderStageCounts {
+  const counts: HeaderStageCounts = {};
+  for (const stage of stages) counts[stage.id] = 0;
   for (const app of applications) {
-    if (app.status in counts) {
-      counts[app.status as keyof HeaderStatusCounts] += 1;
-    }
+    if (app.stage_id in counts) counts[app.stage_id] += 1;
   }
   return counts;
 }
 
 /**
- * Среднее количество дней от подачи отклика (статус 'applied') до первого
- * изменения статуса (любого — screen/interview/rejected). Возвращает null,
- * если данных недостаточно (нет ни одного перехода).
+ * Среднее/медианное количество дней от подачи отклика до первого
+ * изменения этапа (любого). Возвращает null, если данных недостаточно
+ * (нет ни одного перехода).
  */
 function collectDaysToFirstResponse(history: ApplicationStatusHistoryEntry[]): number[] {
   const byApplication = new Map<string, ApplicationStatusHistoryEntry[]>();
@@ -132,12 +119,12 @@ function collectDaysToFirstResponse(history: ApplicationStatusHistoryEntry[]): n
     const sorted = [...entries].sort(
       (a, b) => new Date(a.changed_at).getTime() - new Date(b.changed_at).getTime()
     );
-    const appliedEntry = sorted.find((e) => e.from_status === null);
-    const firstResponse = sorted.find((e) => e.from_status !== null);
+    const createdEntry = sorted.find((e) => e.from_stage_id === null);
+    const firstResponse = sorted.find((e) => e.from_stage_id !== null);
 
-    if (appliedEntry && firstResponse) {
+    if (createdEntry && firstResponse) {
       const days =
-        (new Date(firstResponse.changed_at).getTime() - new Date(appliedEntry.changed_at).getTime()) /
+        (new Date(firstResponse.changed_at).getTime() - new Date(createdEntry.changed_at).getTime()) /
         (1000 * 60 * 60 * 24);
       daysToResponse.push(days);
     }
@@ -172,10 +159,9 @@ export function calculateMedianDaysToFirstResponse(
 }
 
 /**
- * Компании, которые ни разу не ответили: единственная запись в истории —
- * создание отклика (переход из null в 'applied'), статус всё ещё 'applied',
- * и прошло больше thresholdDays дней. Отдельно от общего бейджа "давно без
- * ответа" на карточке — здесь именно список по компаниям, для аналитики.
+ * Компании, которые ни разу не ответили: отклик всё ещё на первом этапе
+ * (минимальный position среди стадий пользователя), в истории только
+ * запись о создании, и прошло больше thresholdDays дней.
  */
 export interface SilentCompany {
   company: string;
@@ -186,8 +172,12 @@ export interface SilentCompany {
 export function calculateSilentCompanies(
   applications: Application[],
   history: ApplicationStatusHistoryEntry[],
+  stages: Stage[],
   thresholdDays = 14
 ): SilentCompany[] {
+  const firstStage = getFirstStage(stages);
+  if (!firstStage) return [];
+
   const historyCountByApp = new Map<string, number>();
   for (const h of history) {
     historyCountByApp.set(h.application_id, (historyCountByApp.get(h.application_id) ?? 0) + 1);
@@ -197,9 +187,9 @@ export function calculateSilentCompanies(
   const results: SilentCompany[] = [];
 
   for (const app of applications) {
-    if (app.status !== 'applied' || !app.applied_date) continue;
+    if (app.stage_id !== firstStage.id || !app.applied_date) continue;
     const historyCount = historyCountByApp.get(app.id) ?? 0;
-    if (historyCount > 1) continue; // был хотя бы один переход статуса — не тишина
+    if (historyCount > 1) continue; // был хотя бы один переход этапа — не тишина
 
     const applied = new Date(app.applied_date);
     const days = Math.floor(
@@ -243,19 +233,22 @@ export interface GroupedConversion {
   label: string;
   total: number;
   reachedInterviewOrBetter: number;
-  /** % откликов в этой группе, дошедших до интервью или дальше */
+  /** % откликов в этой группе, покинувших первый этап (получивших любое движение) */
   conversionRate: number;
 }
 
 function buildGroupedConversion(
   applications: Application[],
   history: ApplicationStatusHistoryEntry[],
+  stages: Stage[],
   groupKeyFn: (app: Application) => string | null
 ): GroupedConversion[] {
-  const reachedSetByApplication = new Map<string, Set<ApplicationStatus>>();
+  const firstStage = getFirstStage(stages);
+
+  const reachedSetByApplication = new Map<string, Set<string>>();
   for (const entry of history) {
-    const set = reachedSetByApplication.get(entry.application_id) ?? new Set<ApplicationStatus>();
-    set.add(entry.to_status);
+    const set = reachedSetByApplication.get(entry.application_id) ?? new Set<string>();
+    set.add(entry.to_stage_id);
     reachedSetByApplication.set(entry.application_id, set);
   }
 
@@ -269,12 +262,11 @@ function buildGroupedConversion(
     group.total += 1;
 
     const reachedSet = reachedSetByApplication.get(app.id);
-    const reachedGoodStage =
-      reachedSet?.has('interview') ||
-      reachedSet?.has('offer') ||
-      app.status === 'interview' ||
-      app.status === 'offer';
-    if (reachedGoodStage) {
+    const movedBeyondFirstStage =
+      (firstStage &&
+        ((reachedSet && [...reachedSet].some((id) => id !== firstStage.id)) || app.stage_id !== firstStage.id)) ??
+      false;
+    if (movedBeyondFirstStage) {
       group.reached += 1;
     }
 
@@ -306,9 +298,10 @@ function getDayOfWeekLabel(appliedAt: string): string {
  */
 export function calculateConversionByDayOfWeek(
   applications: Application[],
-  history: ApplicationStatusHistoryEntry[]
+  history: ApplicationStatusHistoryEntry[],
+  stages: Stage[]
 ): GroupedConversion[] {
-  return buildGroupedConversion(applications, history, (app) =>
+  return buildGroupedConversion(applications, history, stages, (app) =>
     app.applied_at ? getDayOfWeekLabel(app.applied_at) : null
   );
 }
@@ -321,9 +314,10 @@ export function calculateConversionByDayOfWeek(
  */
 export function calculateConversionByHour(
   applications: Application[],
-  history: ApplicationStatusHistoryEntry[]
+  history: ApplicationStatusHistoryEntry[],
+  stages: Stage[]
 ): GroupedConversion[] {
-  const grouped = buildGroupedConversion(applications, history, (app) =>
+  const grouped = buildGroupedConversion(applications, history, stages, (app) =>
     app.applied_at ? String(new Date(app.applied_at).getHours()).padStart(2, '0') : null
   );
 
@@ -339,9 +333,10 @@ export function calculateConversionByHour(
 /** Конверсия по источнику отклика (hh.ru, LinkedIn и т.д.). Пустой source пропускается. */
 export function calculateConversionBySource(
   applications: Application[],
-  history: ApplicationStatusHistoryEntry[]
+  history: ApplicationStatusHistoryEntry[],
+  stages: Stage[]
 ): GroupedConversion[] {
-  return buildGroupedConversion(applications, history, (app) =>
+  return buildGroupedConversion(applications, history, stages, (app) =>
     app.source.trim() ? app.source.trim() : null
   );
 }
@@ -350,9 +345,10 @@ export function calculateConversionBySource(
 export function calculateConversionByResumeVersion(
   applications: Application[],
   history: ApplicationStatusHistoryEntry[],
+  stages: Stage[],
   versionNameById: Map<string, string>
 ): GroupedConversion[] {
-  return buildGroupedConversion(applications, history, (app) =>
+  return buildGroupedConversion(applications, history, stages, (app) =>
     app.resume_version_id ? versionNameById.get(app.resume_version_id) ?? null : null
   );
 }

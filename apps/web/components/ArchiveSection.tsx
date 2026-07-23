@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Application, Company } from '@job-search-tracker/shared';
-import { APPLICATION_STATUS_LABELS } from '@job-search-tracker/shared';
+import type { Application, Company, Stage } from '@job-search-tracker/shared';
 
 function StarRating({ value, onChange }: { value: number | null; onChange: (v: number) => void }) {
   return (
@@ -24,16 +23,19 @@ function StarRating({ value, onChange }: { value: number | null; onChange: (v: n
 function CompanyGroup({
   company,
   apps,
+  stages,
   onRestore,
   onPermanentDelete,
   onUpdateCompany,
 }: {
   company: Company | null;
   apps: Application[];
+  stages: Stage[];
   onRestore: (id: string) => void;
   onPermanentDelete: (id: string) => void;
   onUpdateCompany?: (companyId: string, fields: Partial<Pick<Company, 'url' | 'rating' | 'note'>>) => void;
 }) {
+  const stageNameById = new Map(stages.map((s) => [s.id, s.name]));
   const [expanded, setExpanded] = useState(false);
   const name = company?.name || apps[0]?.company || 'Без названия';
 
@@ -86,7 +88,7 @@ function CompanyGroup({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm text-text">{app.role || 'Без названия'}</p>
                   <p className="text-xs text-text-faint">
-                    {APPLICATION_STATUS_LABELS[app.status]}
+                    {stageNameById.get(app.stage_id) ?? '—'}
                     {app.applied_date ? ` · ${new Date(app.applied_date).toLocaleDateString('ru-RU')}` : ''}
                   </p>
                 </div>
@@ -122,12 +124,14 @@ function CompanyGroup({
 export function ArchiveSection({
   archivedApplications,
   companies,
+  stages,
   onRestore,
   onPermanentDelete,
   onUpdateCompany,
 }: {
   archivedApplications: Application[];
   companies: Company[];
+  stages: Stage[];
   onRestore: (id: string) => void;
   onPermanentDelete: (id: string) => void;
   onUpdateCompany: (companyId: string, fields: Partial<Pick<Company, 'url' | 'rating' | 'note'>>) => void;
@@ -175,6 +179,7 @@ export function ArchiveSection({
               key={g.company?.id ?? `noname-${i}`}
               company={g.company}
               apps={g.apps}
+              stages={stages}
               onRestore={onRestore}
               onPermanentDelete={onPermanentDelete}
               onUpdateCompany={onUpdateCompany}

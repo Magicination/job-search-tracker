@@ -1,19 +1,73 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import type { Application, ApplicationStatus } from '@job-search-tracker/shared';
+import type { Application, Stage } from '@job-search-tracker/shared';
 import { getTodayLocal } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
 import { useToast } from './useToast';
 
-export function useApplications() {
+function isSameLocalDay(isoA: string, isoB: string): boolean {
+  const a = new Date(isoA);
+  const b = new Date(isoB);
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function getFirstStage(stages: Stage[]): Stage | null {
+  if (stages.length === 0) return null;
+  return [...stages].sort((a, b) => a.position - b.position)[0];
+}
+
+/**
+ * stages передаются извне (из useStages()), а не создаются здесь — этому
+ * хуку нужен полный список этапов пользователя, чтобы: 1) знать id
+ * "первого" этапа при создании нового отклика, 2) проверять auto_archive
+ * у текущего этапа при смене стадии (см. updateStage), 3) лениво
+ * доархивировать отклики, у которых "проигрышный" день уже прошёл
+ * (см. commitStaleArchive).
+ */
+export function useApplications(stages: Stage[]) {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  /**
+   * Отклики на auto_archive-этапе, у которых rejected_at относится не к
+   * сегодняшнему дню — реально архивируем в БД (лениво, при загрузке).
+   * Так реализуется "остаётся видимым до конца дня, на следующий день
+   * уходит в архив" без отдельного крон-задания: проверка идёт при
+   * каждой загрузке списка, а день определяется по локальному времени
+   * устройства пользователя в момент проверки.
+   */
+  const commitStaleArchive = useCallback(
+    async (apps: Application[], stagesList: Stage[]) => {
+      if (stagesList.length === 0) return;
+      const autoArchiveIds = new Set(stagesList.filter((s) => s.auto_archive).map((s) => s.id));
+      const now = new Date().toISOString();
+
+      const stale = apps.filter(
+        (app) =>
+          !app.archived &&
+          autoArchiveIds.has(app.stage_id) &&
+          app.rejected_at &&
+          !isSameLocalDay(app.rejected_at, now)
+      );
+
+      if (stale.length === 0) return;
+
+      const staleIds = stale.map((a) => a.id);
+      setApplications((prev) => prev.map((a) => (staleIds.includes(a.id) ? { ...a, archived: true } : a)));
+
+      const { error } = await supabase.from('applications').update({ archived: true }).in('id', staleIds);
+      if (error) {
+        console.error('Failed to lazily archive stale applications:', error);
+      }
+    },
+    []
+  );
 
   const fetchApplications = useCallback(async () => {
     if (!user) return;
@@ -26,8 +80,10 @@ export function useApplications() {
       showToast('Не удалось загрузить отклики. Проверьте соединение и обновите страницу.', 'error');
     } else if (data) {
       setApplications(data as Application[]);
+      commitStaleArchive(data as Application[], stages);
     }
     setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, showToast]);
 
   useEffect(() => {
@@ -49,6 +105,16 @@ export function useApplications() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Повторная проверка "не пора ли доархивировать" при каждом обновлении
+  // списка этапов (например, стадии ещё не были загружены на момент
+  // первого fetchApplications).
+  useEffect(() => {
+    if (applications.length > 0 && stages.length > 0) {
+      commitStaleArchive(applications, stages);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stages.length]);
+
   /**
    * Общая логика создания отклика + первой записи в историю статусов.
    * Используется и пустой кнопкой "Добавить отклик", и автозаполнением по
@@ -57,9 +123,13 @@ export function useApplications() {
   const insertApplicationWithHistory = useCallback(
     async (fields: Partial<Application>) => {
       if (!user) return null;
+      const firstStage = getFirstStage(stages);
+      if (!firstStage) {
+        showToast('Этапы канбана ещё загружаются, попробуйте через секунду.', 'error');
+        return null;
+      }
       const now = new Date().toISOString();
-      
-      // Сначала создаём отклик, возвращая auto-generated ID от Supabase
+
       const { data, error } = await supabase
         .from('applications')
         .insert({
@@ -69,7 +139,7 @@ export function useApplications() {
           source: fields.source ?? '',
           applied_date: fields.applied_date ?? getTodayLocal(),
           applied_at: fields.applied_at ?? now,
-          status: 'applied',
+          stage_id: firstStage.id,
           note: fields.note ?? '',
           salary: fields.salary ?? '',
           experience_required: fields.experience_required ?? '',
@@ -85,28 +155,24 @@ export function useApplications() {
       }
 
       setApplications((prev) => [data as Application, ...prev]);
-      
-      // Добавляем запись в историю статусов
-      const { error: historyError } = await supabase
-        .from('application_status_history')
-        .insert({
-          user_id: user.id,
-          application_id: (data as Application).id,
-          from_status: null,
-          to_status: 'applied',
-          changed_at: now,
-        });
-      
+
+      const { error: historyError } = await supabase.from('application_status_history').insert({
+        user_id: user.id,
+        application_id: (data as Application).id,
+        from_stage_id: null,
+        to_stage_id: firstStage.id,
+        changed_at: now,
+      });
+
       if (historyError) {
         console.error('Error creating status history:', historyError);
-        // Не показываем ошибку пользователю — отклик создан, история не критична
       } else {
         showToast('Отклик успешно сохранён', 'success');
       }
 
       return data as Application;
     },
-    [user, showToast]
+    [user, stages, showToast]
   );
 
   const addApplication = useCallback(async (): Promise<string | null> => {
@@ -157,7 +223,7 @@ export function useApplications() {
       if (debounceTimers.current[key]) {
         clearTimeout(debounceTimers.current[key]);
       }
-      
+
       debounceTimers.current[key] = setTimeout(async () => {
         const { error } = await supabase
           .from('applications')
@@ -220,7 +286,7 @@ export function useApplications() {
       if (debounceTimers.current[key]) {
         clearTimeout(debounceTimers.current[key]);
       }
-      
+
       debounceTimers.current[key] = setTimeout(async () => {
         const { error } = await supabase
           .from('applications')
@@ -276,7 +342,7 @@ export function useApplications() {
       if (debounceTimers.current[key]) {
         clearTimeout(debounceTimers.current[key]);
       }
-      
+
       debounceTimers.current[key] = setTimeout(async () => {
         const { error } = await supabase
           .from('applications')
@@ -355,35 +421,41 @@ export function useApplications() {
   );
 
   /**
-   * Обновление статуса — отдельно от updateField, так как помимо самого поля
-   * нужно записать переход в application_status_history (для воронки конверсии
-   * и расчёта времени между статусами). См. 04-features-logic.md: статус не
-   * меняется автоматически, только по явному действию пользователя — и это
-   * единственное место, где должна появляться новая запись в истории.
+   * Смена этапа — отдельно от updateField, так как помимо самого поля
+   * нужно записать переход в application_status_history (для воронки
+   * конверсии и расчёта времени между этапами). Если новый этап помечен
+   * auto_archive — отклик НЕ уходит в архив сразу: только фиксируется
+   * rejected_at, а реальный архив происходит лениво на следующий день
+   * (см. commitStaleArchive) — до конца текущего дня отклик ещё виден
+   * на доске.
    */
-  const updateStatus = useCallback(
-    async (id: string, newStatus: ApplicationStatus) => {
+  const updateStage = useCallback(
+    async (id: string, newStageId: string) => {
       if (!user) return;
       const current = applications.find((app) => app.id === id);
-      if (!current || current.status === newStatus) return;
+      if (!current || current.stage_id === newStageId) return;
+
+      const newStage = stages.find((s) => s.id === newStageId);
+      const shouldMarkRejected = newStage?.auto_archive ?? false;
 
       setSavingIds((prev) => new Set(prev).add(id));
 
       const now = new Date().toISOString();
-      const shouldArchive = newStatus === 'rejected';
       setApplications((prev) =>
         prev.map((app) =>
-          app.id === id ? { ...app, status: newStatus, updated_at: now, archived: shouldArchive || app.archived } : app
+          app.id === id
+            ? { ...app, stage_id: newStageId, updated_at: now, rejected_at: shouldMarkRejected ? now : null }
+            : app
         )
       );
 
       const { error } = await supabase
         .from('applications')
-        .update({ status: newStatus, updated_at: now, ...(shouldArchive ? { archived: true } : {}) })
+        .update({ stage_id: newStageId, updated_at: now, rejected_at: shouldMarkRejected ? now : null })
         .eq('id', id);
 
       if (error) {
-        showToast('Не удалось изменить статус. Попробуйте ещё раз.', 'error');
+        showToast('Не удалось изменить этап. Попробуйте ещё раз.', 'error');
         setApplications((prev) => prev.map((app) => (app.id === id ? current : app)));
         setSavingIds((prev) => {
           const next = new Set(prev);
@@ -396,17 +468,17 @@ export function useApplications() {
       const { error: historyError } = await supabase.from('application_status_history').insert({
         user_id: user.id,
         application_id: id,
-        from_status: current.status,
-        to_status: newStatus,
+        from_stage_id: current.stage_id,
+        to_stage_id: newStageId,
         changed_at: now,
       });
 
       if (historyError) {
         console.error('Failed to create status history entry:', historyError);
       } else {
-        const statusText = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        const stageName = newStage?.name ?? 'этап';
         showToast(
-          shouldArchive ? `Статус обновлён: ${statusText} — перенесён в архив` : `Статус обновлён: ${statusText}`,
+          shouldMarkRejected ? `Этап обновлён: ${stageName} — уйдёт в архив завтра` : `Этап обновлён: ${stageName}`,
           'success'
         );
       }
@@ -417,7 +489,7 @@ export function useApplications() {
         return next;
       });
     },
-    [user, applications, showToast]
+    [user, applications, stages, showToast]
   );
 
   return {
@@ -427,7 +499,7 @@ export function useApplications() {
     addApplication,
     addApplicationFromFields,
     updateField,
-    updateStatus,
+    updateStage,
     updateAppliedDate,
     updateAppliedTime,
     deleteApplication,

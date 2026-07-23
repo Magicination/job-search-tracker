@@ -50,7 +50,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <>
       <Header />
       <NavTabs />
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-6">
+      <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-4 py-6">
         {children}
       </main>
     </>

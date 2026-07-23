@@ -6,11 +6,11 @@
 // изменение фильтра.
 
 import { useMemo, useState } from 'react';
-import type { Application, ApplicationStatus } from '@job-search-tracker/shared';
+import type { Application } from '@job-search-tracker/shared';
 
 export interface ApplicationFilters {
   search: string;
-  status: ApplicationStatus | 'all';
+  stageId: string | 'all';
   source: string | 'all';
   dateFrom: string; // YYYY-MM-DD, пусто = без ограничения
   dateTo: string;
@@ -18,7 +18,7 @@ export interface ApplicationFilters {
 
 const EMPTY_FILTERS: ApplicationFilters = {
   search: '',
-  status: 'all',
+  stageId: 'all',
   source: 'all',
   dateFrom: '',
   dateTo: '',
@@ -39,7 +39,7 @@ export function useApplicationFilters(applications: Application[]) {
     const query = filters.search.trim().toLowerCase();
 
     return applications.filter((app) => {
-      if (filters.status !== 'all' && app.status !== filters.status) return false;
+      if (filters.stageId !== 'all' && app.stage_id !== filters.stageId) return false;
       if (filters.source !== 'all' && app.source !== filters.source) return false;
       if (filters.dateFrom && (!app.applied_date || app.applied_date < filters.dateFrom)) return false;
       if (filters.dateTo && (!app.applied_date || app.applied_date > filters.dateTo)) return false;
@@ -67,7 +67,7 @@ export function useApplicationFilters(applications: Application[]) {
   const resetFilters = () => setFilters(EMPTY_FILTERS);
   const hasActiveFilters =
     filters.search !== '' ||
-    filters.status !== 'all' ||
+    filters.stageId !== 'all' ||
     filters.source !== 'all' ||
     filters.dateFrom !== '' ||
     filters.dateTo !== '';

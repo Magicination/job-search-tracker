@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Application, GroupedConversion, BadgeVariant } from '@job-search-tracker/shared';
+import type { GroupedConversion, Stage } from '@job-search-tracker/shared';
 import {
-  APPLICATION_STATUS_LABELS,
   calculateConversionByResumeVersion,
   calculateConversionFunnel,
   calculateFunnelFromHistory,
@@ -16,6 +15,7 @@ import {
   calculateRepeatCompanies,
 } from '@job-search-tracker/shared';
 import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics';
+import { useStages } from '../../lib/hooks/useStages';
 import { SkeletonCard } from '../../components/Skeleton';
 import { HourlyChart } from '../../components/HourlyChart';
 import { WeekdayChart } from '../../components/WeekdayChart';
@@ -87,104 +87,105 @@ function getPeriodCutoff(period: Period): Date | null {
 }
 
 function CollapsibleSection({
- title,
- subtitle,
- children,
+  title,
+  subtitle,
+  children,
 }: {
- title: string;
- subtitle?: string;
- children: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
 }) {
- const [expanded, setExpanded] = useState(true);
- return (
- <div className="rounded-lg border border-border-soft bg-panel p-4">
- <button
- onClick={() => setExpanded((e) => !e)}
- className="flex w-full items-center justify-between text-left"
- >
- <div>
- <h2 className="text-sm font-semibold text-text">{title}</h2>
- {subtitle && <p className="mt-0.5 text-xs text-text-faint">{subtitle}</p>}
- </div>
- <span className="text-text-faint">{expanded ? '▾' : '▸'}</span>
- </button>
- {expanded && <div className="mt-3">{children}</div>}
- </div>
- );
+  const [expanded, setExpanded] = useState(true);
+  return (
+    <div className="rounded-lg border border-border-soft bg-panel p-4">
+      <button
+        onClick={() => setExpanded((e) => !e)}
+        className="flex w-full items-center justify-between text-left"
+      >
+        <div>
+          <h2 className="text-sm font-semibold text-text">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-xs text-text-faint">{subtitle}</p>}
+        </div>
+        <span className="text-text-faint">{expanded ? '▾' : '▸'}</span>
+      </button>
+      {expanded && <div className="mt-3">{children}</div>}
+    </div>
+  );
 }
 
-const FUNNEL_BAR_CLASS: Record<BadgeVariant, string> = {
- blue: 'bg-accent-blue',
- amber: 'bg-accent-amber',
- coral: 'bg-accent-coral',
- teal: 'bg-accent-teal',
- neutral: 'bg-text-faint',
+const FUNNEL_BAR_CLASS: Record<Stage['color'], string> = {
+  blue: 'bg-accent-blue',
+  amber: 'bg-accent-amber',
+  coral: 'bg-accent-coral',
+  teal: 'bg-accent-teal',
+  neutral: 'bg-text-faint',
 };
 
 function FunnelStage({
- label,
- count,
- percent,
- variant,
+  label,
+  count,
+  percent,
+  variant,
 }: {
- label: string;
- count: number;
- percent: number;
- variant: BadgeVariant;
+  label: string;
+  count: number;
+  percent: number;
+  variant: Stage['color'];
 }) {
- return (
- <div>
- <div className="flex items-center justify-between text-xs text-text-dim">
- <span>{label}</span>
- <span className="tabular-nums">
- {count} · {percent}%
- </span>
- </div>
- <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-panel-2">
- <div className={`h-full rounded-full ${FUNNEL_BAR_CLASS[variant]}`} style={{ width: `${percent}%` }} />
- </div>
- </div>
- );
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs text-text-dim">
+        <span>{label}</span>
+        <span className="tabular-nums">
+          {count} · {percent}%
+        </span>
+      </div>
+      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-panel-2">
+        <div className={`h-full rounded-full ${FUNNEL_BAR_CLASS[variant]}`} style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
 }
 
 function GroupedTableBody({
- groups,
- emptyHint,
- highlightLow,
+  groups,
+  emptyHint,
+  highlightLow,
 }: {
- groups: GroupedConversion[];
- emptyHint: string;
- highlightLow?: boolean;
+  groups: GroupedConversion[];
+  emptyHint: string;
+  highlightLow?: boolean;
 }) {
- if (groups.length === 0) {
- return <p className="text-xs text-text-faint">{emptyHint}</p>;
- }
- const withData = groups.filter((g) => g.total >= 3);
- const avgRate =
- withData.length > 0 ? withData.reduce((sum, g) => sum + g.conversionRate, 0) / withData.length : null;
+  if (groups.length === 0) {
+    return <p className="text-xs text-text-faint">{emptyHint}</p>;
+  }
+  const withData = groups.filter((g) => g.total >= 3);
+  const avgRate =
+    withData.length > 0 ? withData.reduce((sum, g) => sum + g.conversionRate, 0) / withData.length : null;
 
- return (
- <div className="flex flex-col gap-1.5">
- {groups.map((g) => {
- const isLow = highlightLow && avgRate !== null && g.total >= 3 && g.conversionRate < avgRate * 0.5;
- return (
- <div key={g.label} className="flex items-center justify-between text-sm">
- <span className={`flex items-center gap-1 ${isLow ? 'text-accent-coral' : 'text-text-dim'}`}>
-   {g.label}
-   {isLow && <TriangleAlert className="h-3 w-3" />}
- </span>
- <span className="tabular-nums text-text-faint">
-   {g.reachedInterviewOrBetter}/{g.total} · {g.conversionRate}%
- </span>
- </div>
- );
- })}
- </div>
- );
+  return (
+    <div className="flex flex-col gap-1.5">
+      {groups.map((g) => {
+        const isLow = highlightLow && avgRate !== null && g.total >= 3 && g.conversionRate < avgRate * 0.5;
+        return (
+          <div key={g.label} className="flex items-center justify-between text-sm">
+            <span className={`flex items-center gap-1 ${isLow ? 'text-accent-coral' : 'text-text-dim'}`}>
+              {g.label}
+              {isLow && <TriangleAlert className="h-3 w-3" />}
+            </span>
+            <span className="tabular-nums text-text-faint">
+              {g.reachedInterviewOrBetter}/{g.total} · {g.conversionRate}%
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function AnalyticsPage() {
   const { applications, history, resumeVersions, loading } = useApplicationAnalytics();
+  const { stages, loading: stagesLoading } = useStages();
   const { visible, toggle } = useVisibleSections();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -194,7 +195,7 @@ export default function AnalyticsPage() {
   const periodIds = new Set(periodApplications.map((a) => a.id));
   const periodHistory = cutoff ? history.filter((h) => periodIds.has(h.application_id)) : history;
 
-  if (loading) {
+  if (loading || stagesLoading) {
     return (
       <div className="flex flex-col gap-6">
         <h1 className="text-lg font-semibold text-text">Аналитика</h1>
@@ -220,22 +221,25 @@ export default function AnalyticsPage() {
     );
   }
 
-  const currentFunnel = calculateConversionFunnel(periodApplications);
-  const historyFunnel = calculateFunnelFromHistory(periodHistory);
+  const orderedStages = [...stages].sort((a, b) => a.position - b.position);
+
+  const currentFunnel = calculateConversionFunnel(periodApplications, stages);
+  const historyFunnel = calculateFunnelFromHistory(periodHistory, stages);
   const avgDays = calculateAverageDaysToFirstResponse(periodHistory);
-  const byDayOfWeek = calculateConversionByDayOfWeek(periodApplications, periodHistory);
-  const byHour = calculateConversionByHour(periodApplications, periodHistory);
-  const bySource = calculateConversionBySource(periodApplications, periodHistory);
+  const byDayOfWeek = calculateConversionByDayOfWeek(periodApplications, periodHistory, stages);
+  const byHour = calculateConversionByHour(periodApplications, periodHistory, stages);
+  const bySource = calculateConversionBySource(periodApplications, periodHistory, stages);
 
   const resumeNameById = new Map(resumeVersions.map((v) => [v.id, v.name]));
-  const byResumeVersion = calculateConversionByResumeVersion(periodApplications, periodHistory, resumeNameById);
+  const byResumeVersion = calculateConversionByResumeVersion(periodApplications, periodHistory, stages, resumeNameById);
 
   const medianDays = calculateMedianDaysToFirstResponse(periodHistory);
-  const silentCompanies = calculateSilentCompanies(periodApplications, periodHistory);
+  const silentCompanies = calculateSilentCompanies(periodApplications, periodHistory, stages);
   const repeatCompanies = calculateRepeatCompanies(periodApplications);
 
-  const pct = (count: number) =>
-    historyFunnel.applied ? Math.round((count / historyFunnel.applied) * 100) : 0;
+  const firstStage = orderedStages[0];
+  const firstStageTotal = firstStage ? historyFunnel[firstStage.id] ?? 0 : 0;
+  const pct = (count: number) => (firstStageTotal ? Math.round((count / firstStageTotal) * 100) : 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -285,14 +289,25 @@ export default function AnalyticsPage() {
       {visible.funnel && (
       <CollapsibleSection title="Воронка конверсии" subtitle="По истории — учитывает все этапы, через которые прошёл отклик">
         <div className="flex flex-col gap-3">
-          <FunnelStage label="Отклик отправлен" count={historyFunnel.applied} percent={100} variant="blue" />
-          <FunnelStage label="Интервью" count={historyFunnel.interview} percent={pct(historyFunnel.interview)} variant="coral" />
-          <FunnelStage label="Оффер" count={historyFunnel.offer} percent={pct(historyFunnel.offer)} variant="teal" />
-          <FunnelStage label="Отказ" count={historyFunnel.rejected} percent={pct(historyFunnel.rejected)} variant="neutral" />
+          {orderedStages.map((stage, i) => (
+            <FunnelStage
+              key={stage.id}
+              label={stage.name}
+              count={historyFunnel[stage.id] ?? 0}
+              percent={i === 0 ? 100 : pct(historyFunnel[stage.id] ?? 0)}
+              variant={stage.color}
+            />
+          ))}
         </div>
         <p className="mt-3 text-xs text-text-faint">
-          Текущие статусы прямо сейчас: отправлено {currentFunnel.applied}, интервью {currentFunnel.interview},
-          оффер {currentFunnel.offer}, отказ {currentFunnel.rejected}.
+          Текущие статусы прямо сейчас:{' '}
+          {orderedStages.map((s, i) => (
+            <span key={s.id}>
+              {i > 0 && ', '}
+              {s.name.toLowerCase()} {currentFunnel.counts[s.id] ?? 0}
+            </span>
+          ))}
+          .
         </p>
       </CollapsibleSection>
       )}
@@ -315,8 +330,8 @@ export default function AnalyticsPage() {
         </div>
         <p className="mt-3 text-xs text-text-faint">
           {avgDays !== null
-            ? 'От момента отклика до первого изменения статуса (интервью или отказ). Медиана устойчивее к редким выбросам — например, одному отклику с ответом через два месяца.'
-            : 'Пока нет ни одного отклика с изменённым статусом — данных недостаточно.'}
+            ? 'От момента отклика до первого изменения этапа. Медиана устойчивее к редким выбросам — например, одному отклику с ответом через два месяца.'
+            : 'Пока нет ни одного отклика с изменённым этапом — данных недостаточно.'}
         </p>
       </CollapsibleSection>
       )}

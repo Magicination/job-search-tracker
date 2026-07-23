@@ -1,18 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import type { Application, ApplicationStatus, ResumeVersion } from '@job-search-tracker/shared';
-import {
-  APPLICATION_STATUS_BADGE_VARIANT,
-  APPLICATION_STATUS_LABELS,
-  STANDARD_APPLICATION_SOURCES,
-  STANDARD_EXPERIENCE_LEVELS,
-} from '@job-search-tracker/shared';
+import type { Application, ResumeVersion, Stage } from '@job-search-tracker/shared';
+import { STANDARD_APPLICATION_SOURCES, STANDARD_EXPERIENCE_LEVELS } from '@job-search-tracker/shared';
 import { Badge } from './Badge';
 import { getDocumentDownloadUrl } from '../lib/documentStorage';
-import { Paperclip, X, ExternalLink } from 'lucide-react';
-
-const STATUS_OPTIONS: ApplicationStatus[] = ['applied', 'interview', 'offer', 'rejected'];
+import { Paperclip, ExternalLink } from 'lucide-react';
 
 /** Грубая проверка "похоже на URL" — без строгой валидации, просто чтобы решить, рисовать ли ссылку. */
 function looksLikeUrl(text: string): boolean {
@@ -45,8 +38,6 @@ function TextField({
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
-  const [saveFeedback, setSaveFeedback] = useState(false);
-
   return (
     <div className="relative">
       <input
@@ -55,12 +46,6 @@ function TextField({
         placeholder={placeholder}
         className="w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text outline-none focus-visible:border-accent-blue hover:border-border/80 transition-colors"
       />
-      {/* Индикатор успешного сохранения поля */}
-      <div className="pointer-events-none absolute -top-1 right-1 flex h-4 w-4">
-        <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-accent-teal opacity-0 transition-opacity duration-150 ease-out" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
     </div>
   );
 }
@@ -157,31 +142,34 @@ async function handleOpenFile(filePath: string | null) {
 export function ApplicationCard({
   app,
   resumeVersions,
+  stages,
   onUpdate,
   onDateChange,
   onTimeChange,
-  onStatusChange,
+  onStageChange,
   onDelete,
   company,
   onUpdateCompany,
 }: {
   app: Application;
   resumeVersions: ResumeVersion[];
+  stages: Stage[];
   onUpdate: <K extends keyof Application>(field: K, value: Application[K], debounceMs?: number) => void;
   onDateChange: (newDate: string) => void;
   onTimeChange: (newTime: string) => void;
-  onStatusChange: (status: ApplicationStatus) => void;
+  onStageChange: (stageId: string) => void;
   onDelete?: () => Promise<void> | void;
   company?: { id: string; url: string | null } | null;
   onUpdateCompany?: (companyId: string, fields: { url: string }) => void;
 }) {
   const appliedTime = app.applied_at ? new Date(app.applied_at).toTimeString().slice(0, 5) : '';
 
-  // Flag for delete action
   const [willDelete, setWillDelete] = useState(false);
   const [editingCompanyUrl, setEditingCompanyUrl] = useState(false);
 
   const selectedResumeVersion = resumeVersions.find((v) => v.id === app.resume_version_id);
+  const orderedStages = [...stages].sort((a, b) => a.position - b.position);
+  const currentStage = stages.find((s) => s.id === app.stage_id);
 
   return (
     <div className="rounded-lg border border-border-soft bg-panel p-3 max-w-md overflow-y-auto">
@@ -231,7 +219,6 @@ export function ApplicationCard({
           </div>
           <div>
             <FieldLabel>Вакансия</FieldLabel>
-
             <TextField value={app.role} onChange={(v) => onUpdate('role', v)} placeholder="Вакансия" />
           </div>
         </div>
@@ -281,15 +268,15 @@ export function ApplicationCard({
           />
         </div>
         <div>
-          <FieldLabel>Статус</FieldLabel>
+          <FieldLabel>Этап</FieldLabel>
           <select
-            value={app.status}
-            onChange={(e) => onStatusChange(e.target.value as ApplicationStatus)}
+            value={app.stage_id}
+            onChange={(e) => onStageChange(e.target.value)}
             className="w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text outline-none focus-visible:border-accent-blue"
           >
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {APPLICATION_STATUS_LABELS[s]}
+            {orderedStages.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
               </option>
             ))}
           </select>
@@ -343,7 +330,7 @@ export function ApplicationCard({
           <FieldLabel>Заметка</FieldLabel>
           <NoteField value={app.note} onChange={(v) => onUpdate('note', v)} />
         </div>
-        <Badge label={APPLICATION_STATUS_LABELS[app.status]} variant={APPLICATION_STATUS_BADGE_VARIANT[app.status]} />
+        {currentStage && <Badge label={currentStage.name} variant={currentStage.color} />}
       </div>
 
       <div className="mt-3 border-t border-border-soft pt-2 flex items-center justify-between gap-2">
@@ -360,12 +347,14 @@ export function ApplicationCard({
         </button>
       </div>
 
-      {/* Delete confirmation modal */}
       {willDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-lg border border-border bg-bg shadow-xl">
-            <h2 className="text-base font-semibold text-text mb-3">Удалить отклик</h2>
-            <p className="mb-4 text-sm text-text-dim">Этот отклик будет удалён навсегда. Восстановить его будет невозможно.</p>
+          <div className="w-full max-w-lg rounded-lg border border-border bg-bg shadow-xl p-4">
+            <h2 className="text-base font-semibold text-text mb-3">Убрать отклик с доски?</h2>
+            <p className="mb-4 text-sm text-text-dim">
+              Отклик переместится в архив (внизу страницы «Отклики») — оттуда его можно будет восстановить
+              или удалить безвозвратно.
+            </p>
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={() => setWillDelete(false)}
@@ -377,7 +366,7 @@ export function ApplicationCard({
                 onClick={() => { setWillDelete(false); onDelete?.(); }}
                 className="rounded-lg border border-accent-coral bg-bg px-4 py-2 text-sm font-medium text-accent-coral hover:bg-panel transition"
               >
-                Удалить
+                В архив
               </button>
             </div>
           </div>
