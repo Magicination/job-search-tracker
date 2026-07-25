@@ -109,29 +109,37 @@ export function useStages() {
   );
 
   /**
-   * Меняет порядок местами двух соседних этапов (единственный способ
-   * поменять position — простой обмен, без свободного drag-and-drop
-   * порядка колонок, этого достаточно для управления небольшим списком
-   * этапов).
-   */
-  const swapStagePositions = useCallback(
-    async (idA: string, idB: string) => {
-      const a = stages.find((s) => s.id === idA);
-      const b = stages.find((s) => s.id === idB);
-      if (!a || !b) return;
-
-      setStages((prev) =>
-        prev
-          .map((s) => (s.id === idA ? { ...s, position: b.position } : s.id === idB ? { ...s, position: a.position } : s))
-          .sort((x, y) => x.position - y.position)
+  
+  Полный пересчёт порядка этапов после drag-and-drop — принимает id в
+  новом желаемом порядке. Делаем в ДВА прохода: сначала выставляем всем
+  временные отрицательные позиции (гарантированно не пересекаются ни с
+  текущими, ни друг с другом), потом — финальные 0..N-1. Так безопаснее
+  простого "поменять местами" — из-за unique(user_id, position) в БД
+  прямой обмен двух позиций рискует на мгновение столкнуться с чужой
+  позицией и упасть с ошибкой уникальности.
+  */
+  const reorderStages = useCallback(
+    async (orderedIds: string[]) => {
+      const reordered = orderedIds
+        .map((id, index) => {
+          const stage = stages.find((s) => s.id === id);
+          return stage ? { ...stage, position: index } : null;
+        })
+        .filter((s): s is Stage => s !== null);
+      if (reordered.length !== stages.length) return;
+      setStages(reordered);
+      const tempOffset = await Promise.all(
+        reordered.map((s, i) => supabase.from('stages').update({ position: -(i + 1) }).eq('id', s.id))
       );
-
-      const [{ error: errorA }, { error: errorB }] = await Promise.all([
-        supabase.from('stages').update({ position: b.position }).eq('id', idA),
-        supabase.from('stages').update({ position: a.position }).eq('id', idB),
-      ]);
-
-      if (errorA || errorB) {
+      if (tempOffset.some((r) => r.error)) {
+        showToast('Не удалось изменить порядок этапов.', 'error');
+        fetchStages();
+        return;
+      }
+      const final = await Promise.all(
+        reordered.map((s) => supabase.from('stages').update({ position: s.position }).eq('id', s.id))
+      );
+      if (final.some((r) => r.error)) {
         showToast('Не удалось изменить порядок этапов.', 'error');
         fetchStages();
       }
@@ -153,5 +161,5 @@ export function useStages() {
     [stages, showToast]
   );
 
-  return { stages, loading, addStage, updateStage, swapStagePositions, deleteStage };
+  return { stages, loading, addStage, updateStage, reorderStages, deleteStage };
 }

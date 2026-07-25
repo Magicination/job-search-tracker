@@ -10,6 +10,9 @@ const BORDER_L_CLASS: Record<Stage['color'], string> = {
   amber: 'border-l-accent-amber',
   teal: 'border-l-accent-teal',
   coral: 'border-l-accent-coral',
+  violet: 'border-l-accent-violet',
+  rose: 'border-l-accent-rose',
+  lime: 'border-l-accent-lime',
   neutral: 'border-l-text-faint',
 };
 
@@ -18,6 +21,9 @@ const HOVER_CLASS: Record<Stage['color'], string> = {
   amber: 'hover:border-accent-amber/60 hover:bg-accent-amber/5',
   teal: 'hover:border-accent-teal/60 hover:bg-accent-teal/5',
   coral: 'hover:border-accent-coral/60 hover:bg-accent-coral/5',
+  violet: 'hover:border-accent-violet/60 hover:bg-accent-violet/5',
+  rose: 'hover:border-accent-rose/60 hover:bg-accent-rose/5',
+  lime: 'hover:border-accent-lime/60 hover:bg-accent-lime/5',
   neutral: 'hover:border-border-soft hover:bg-panel-2',
 };
 

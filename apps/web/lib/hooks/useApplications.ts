@@ -145,6 +145,7 @@ export function useApplications(stages: Stage[]) {
           salary: fields.salary ?? '',
           experience_required: fields.experience_required ?? '',
           vacancy_url: fields.vacancy_url ?? null,
+          resume_version_id: fields.resume_version_id ?? null,
         })
         .select()
         .single();
@@ -198,8 +199,9 @@ export function useApplications(stages: Stage[]) {
       source?: string;
       note?: string;
       vacancy_url?: string;
-    }): Promise<{ success: boolean; error?: string; id?: string }> => {
-      const created = await insertApplicationWithHistory(fields);
+     resume_version_id?: string;
+   }): Promise<{ success: boolean; error?: string; id?: string }> => {
+     const created = await insertApplicationWithHistory(fields);
       if (!created) {
         return { success: false, error: 'Не удалось сохранить отклик.' };
       }
@@ -239,7 +241,6 @@ export function useApplications(stages: Stage[]) {
             );
           }
         } else {
-          showToast(`Изменение ${String(field).toLowerCase()} сохранено`, 'success');
         }
       }, debounceMs);
     },
@@ -356,7 +357,6 @@ export function useApplications(stages: Stage[]) {
             prev.map((app) => (app.id === id ? { ...app, applied_at: previousAt } : app))
           );
         } else {
-          showToast('Время отклика сохранено', 'success');
         }
       }, 500);
     },

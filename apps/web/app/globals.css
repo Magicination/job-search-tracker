@@ -14,6 +14,9 @@
   --accent-teal: #3fb88f;
   --accent-blue: #5b8fd6;
   --accent-coral: #dd6b4f;
+  --accent-violet: #a78bfa;
+  --accent-rose: #f472b6;
+  --accent-lime: #84cc16;
 }
 
 /* Светлая тема — переопределяет те же переменные, весь UI построен на них
@@ -33,6 +36,9 @@
   --accent-teal: #217859;
   --accent-blue: #3f6fb8;
   --accent-coral: #c8503a;
+  --accent-violet: #7c4fd6;
+  --accent-rose: #c23b6f;
+  --accent-lime: #4d7c0f;
 }
 
 @theme inline {
@@ -49,6 +55,9 @@
   --color-accent-teal: var(--accent-teal);
   --color-accent-blue: var(--accent-blue);
   --color-accent-coral: var(--accent-coral);
+  --color-accent-violet: var(--accent-violet);
+  --color-accent-rose: var(--accent-rose);
+  --color-accent-lime: var(--accent-lime);
 
   --font-sans: -apple-system, "Segoe UI", Roboto, sans-serif;
 }

@@ -16,7 +16,7 @@ import { SkeletonList } from '../../components/Skeleton';
 import { exportApplicationsToCsv, exportWeeklySummaryToCsv } from '../../lib/exportApplications';
 
 export default function ApplicationsPage() {
-  const { stages, addStage, updateStage: updateStageDef, swapStagePositions, deleteStage } = useStages();
+  const { stages, addStage, updateStage: updateStageDef, reorderStages, deleteStage } = useStages();
   const {
     applications,
     loading,
@@ -88,10 +88,10 @@ export default function ApplicationsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-text">Отклики</h1>
+        <p className="mt-1 text-sm text-text-dim">Добавьте отклик вручную или автоматически через букмарклет.</p>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-text-dim">Добавьте отклик вручную или автоматически через букмарклет.</p>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="flex flex-wrap gap-2">
           <BookmarkletCard />
           <button
@@ -161,7 +161,7 @@ export default function ApplicationsPage() {
           onAutoOpenHandled={() => setAutoOpenId(null)}
           onAddStage={addStage}
           onUpdateStage={updateStageDef}
-          onSwapStages={swapStagePositions}
+          onReorderStages={reorderStages}
           onDeleteStage={deleteStage}
         />
       )}
