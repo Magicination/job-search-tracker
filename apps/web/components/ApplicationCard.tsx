@@ -244,7 +244,7 @@ export function ApplicationCard({
           <FieldLabel>Источник</FieldLabel>
           <SelectOrCustomField
             value={app.source}
-            onChange={(v) => onUpdate('source', v, 0)}
+            onChange={(v) => onUpdate('source', v)}
             options={STANDARD_APPLICATION_SOURCES}
             customPlaceholder="Свой источник"
           />

@@ -15,6 +15,9 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
   teal: 'text-accent-teal bg-accent-teal/15 border-accent-teal/40',
   blue: 'text-accent-blue bg-accent-blue/15 border-accent-blue/40',
   coral: 'text-accent-coral bg-accent-coral/15 border-accent-coral/40',
+  violet: 'text-accent-violet bg-accent-violet/15 border-accent-violet/40',
+  rose: 'text-accent-rose bg-accent-rose/15 border-accent-rose/40',
+  lime: 'text-accent-lime bg-accent-lime/15 border-accent-lime/40',
   neutral: 'text-text-faint bg-panel-2 border-border',
 };
 

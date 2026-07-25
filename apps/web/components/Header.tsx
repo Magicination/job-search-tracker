@@ -13,6 +13,9 @@ const TEXT_CLASS: Record<Stage['color'], string> = {
   amber: 'text-accent-amber',
   teal: 'text-accent-teal',
   coral: 'text-accent-coral',
+  violet: 'text-accent-violet',
+  rose: 'text-accent-rose',
+  lime: 'text-accent-lime',
   neutral: 'text-text-faint',
 };
 

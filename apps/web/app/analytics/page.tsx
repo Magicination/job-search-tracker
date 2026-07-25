@@ -118,6 +118,9 @@ const FUNNEL_BAR_CLASS: Record<Stage['color'], string> = {
   amber: 'bg-accent-amber',
   coral: 'bg-accent-coral',
   teal: 'bg-accent-teal',
+  violet: 'bg-accent-violet',
+  rose: 'bg-accent-rose',
+  lime: 'bg-accent-lime',
   neutral: 'bg-text-faint',
 };
 

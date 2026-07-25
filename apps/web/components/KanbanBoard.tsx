@@ -22,7 +22,7 @@ function daysSinceApplied(dateStr: string | null): number | null {
 
 export function KanbanBoard({
   applications, resumeVersions, stages, onUpdate, onDateChange, onTimeChange, onStageChange, onDelete, autoOpenId, onAutoOpenHandled, history, savingIds, companies, onUpdateCompany,
-  onAddStage, onUpdateStage, onSwapStages, onDeleteStage,
+  onAddStage, onUpdateStage, onReorderStages, onDeleteStage,
 }: {
   applications: Application[];
   resumeVersions: ResumeVersion[];
@@ -40,7 +40,7 @@ export function KanbanBoard({
   onUpdateCompany?: (companyId: string, fields: { url: string }) => void;
   onAddStage: (name: string, color: Stage['color']) => void;
   onUpdateStage: (id: string, fields: Partial<Pick<Stage, 'name' | 'color' | 'auto_archive'>>) => void;
-  onSwapStages: (idA: string, idB: string) => void;
+  onReorderStages: (orderedIds: string[]) => void;
   onDeleteStage: (id: string) => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
@@ -280,7 +280,7 @@ export function KanbanBoard({
             stages={stages}
             onAddStage={onAddStage}
             onUpdateStage={onUpdateStage}
-            onSwapStages={onSwapStages}
+            onReorderStages={onReorderStages}
             onDeleteStage={onDeleteStage}
           />
         </Modal>
