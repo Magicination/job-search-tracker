@@ -39,7 +39,7 @@ export const SLOT_TYPE_COLORS = {
 // hex для inline-стилей вроде графиков), эти значения резолвятся в CSS-классы,
 // завязанные на var(--accent-*), и автоматически меняются между тёмной и
 // светлой темой. См. apps/web/components/Badge.tsx.
-export type BadgeVariant = 'amber' | 'teal' | 'blue' | 'coral' | 'neutral';
+export type BadgeVariant = 'amber' | 'teal' | 'blue' | 'coral' | 'violet' | 'rose' | 'lime' | 'neutral';
 
 export const TASK_CATEGORY_BADGE_VARIANT: Record<'job' | 'study' | 'eng', BadgeVariant> = {
   job: 'amber',
