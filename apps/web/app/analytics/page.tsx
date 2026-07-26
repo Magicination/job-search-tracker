@@ -170,14 +170,16 @@ function GroupedTableBody({
     <div className="flex flex-col gap-1.5">
       {groups.map((g) => {
         const isLow = highlightLow && avgRate !== null && g.total >= 3 && g.conversionRate < avgRate * 0.5;
+        const lowSample = g.total < 3;
         return (
           <div key={g.label} className="flex items-center justify-between text-sm">
             <span className={`flex items-center gap-1 ${isLow ? 'text-accent-coral' : 'text-text-dim'}`}>
               {g.label}
               {isLow && <TriangleAlert className="h-3 w-3" />}
             </span>
-            <span className="tabular-nums text-text-faint">
+            <span className={`tabular-nums ${lowSample ? 'text-text-faint/60' : 'text-text-faint'}`}>
               {g.reachedInterviewOrBetter}/{g.total} · {g.conversionRate}%
+              {lowSample && <span className="ml-1 text-[10px] italic">мало данных</span>}
             </span>
           </div>
         );

@@ -244,6 +244,14 @@ function buildGroupedConversion(
   groupKeyFn: (app: Application) => string | null
 ): GroupedConversion[] {
   const firstStage = getFirstStage(stages);
+  // "Реальный прогресс" — движение на этап, который не является ни первым
+  // (там все отклики стартуют), ни "проигрышным" (auto_archive, например
+  // "Отклонён"). Раньше сюда засчитывался и прямой уход в отказ — из-за
+  // этого источник/версия резюме с одним отклонённым тестовым откликом
+  // показывали 100% "конверсии", хотя по факту прогресса не было вовсе.
+  const goodStageIds = new Set(
+    stages.filter((s) => (!firstStage || s.id !== firstStage.id) && !s.auto_archive).map((s) => s.id)
+  );
 
   const reachedSetByApplication = new Map<string, Set<string>>();
   for (const entry of history) {
@@ -262,11 +270,9 @@ function buildGroupedConversion(
     group.total += 1;
 
     const reachedSet = reachedSetByApplication.get(app.id);
-    const movedBeyondFirstStage =
-      (firstStage &&
-        ((reachedSet && [...reachedSet].some((id) => id !== firstStage.id)) || app.stage_id !== firstStage.id)) ??
-      false;
-    if (movedBeyondFirstStage) {
+    const reachedGenuineProgress =
+      (reachedSet && [...reachedSet].some((id) => goodStageIds.has(id))) || goodStageIds.has(app.stage_id);
+    if (reachedGenuineProgress) {
       group.reached += 1;
     }
 
