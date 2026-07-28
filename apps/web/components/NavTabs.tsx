@@ -6,6 +6,7 @@ import { useAuth } from '../lib/hooks/useAuth';
 
 const TABS = [
   { href: '/applications', label: 'Отклики' },
+  { href: '/companies', label: 'Компании' },
   { href: '/resumes', label: 'Резюме' },
   { href: '/analytics', label: 'Аналитика' },
 ] as const;

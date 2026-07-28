@@ -145,6 +145,7 @@ export function useApplications(stages: Stage[]) {
           salary: fields.salary ?? '',
           experience_required: fields.experience_required ?? '',
           vacancy_url: fields.vacancy_url ?? null,
+          vacancy_description: fields.vacancy_description ?? null,
           resume_version_id: fields.resume_version_id ?? null,
         })
         .select()
@@ -199,6 +200,7 @@ export function useApplications(stages: Stage[]) {
       source?: string;
       note?: string;
       vacancy_url?: string;
+      vacancy_description?: string;
      resume_version_id?: string;
    }): Promise<{ success: boolean; error?: string; id?: string }> => {
      const created = await insertApplicationWithHistory(fields);

@@ -24,6 +24,7 @@ export default function AddFromBookmarkletPage() {
   const [note, setNote] = useState('');
   const [resumeVersionId, setResumeVersionId] = useState('');
   const [url] = useState(initialUrl);
+  const [description] = useState(searchParams.get('description') ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +57,7 @@ export default function AddFromBookmarkletPage() {
       experience_required: experience,
       source: url.includes('hh.') ? 'hh.ru' : '',
       vacancy_url: url,
+      vacancy_description: description || undefined,
       note,
       resume_version_id: resumeVersionId || undefined,
     });
