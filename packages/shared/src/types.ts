@@ -59,6 +59,7 @@ export interface Application {
   stage_id: string;
   note: string;
   vacancy_url: string | null;
+  vacancy_description: string | null; // полный текст описания вакансии, если удалось вытащить букмарклетом — для будущего анализа частотности слов/навыков
   company_id: string | null; // ссылка на запись в companies — заполняется автоматически по названию
   archived: boolean; // отклик скрыт из основной доски (вручную, или лениво — на след. день после auto_archive-этапа)
   rejected_at: string | null; // момент перехода на auto_archive-этап — до конца этого дня отклик ещё виден на доске
