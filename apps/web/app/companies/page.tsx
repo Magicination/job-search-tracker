@@ -3,8 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useCompanies } from '../../lib/hooks/useCompanies';
-import { Building2, TrendingUp, AlertCircle, Search, FileText } from 'lucide-react';
-import type { Company } from '@job-search-tracker/shared';
+import { Building2, FileText } from 'lucide-react';
 
 export default function CompaniesPage() {
   const { companies, loading, updateCompany } = useCompanies();

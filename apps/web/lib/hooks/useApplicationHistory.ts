@@ -52,7 +52,7 @@ export function useApplicationHistory() {
     return () => {
       channel.unsubscribe();
     };
-  }, [user?.id, fetchHistory]);
+  }, [user?.id, fetchHistory, channelSuffix]);
 
   return { history, loading };
 }
