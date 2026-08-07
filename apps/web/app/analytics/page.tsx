@@ -2,52 +2,51 @@
 
 import { useState, useEffect } from 'react';
 import type { GroupedConversion, Stage, StageBreakdownGroup } from '@job-search-tracker/shared';
-import {
-  calculateConversionByResumeVersion,
-  calculateConversionFunnel,
-  calculateFunnelFromHistory,
-  calculateAverageDaysToFirstResponse,
-  calculateMedianDaysToFirstResponse,
-  calculateConversionByDayOfWeek,
-  calculateConversionByHour,
-  calculateConversionBySource,
-  calculateSilentCompanies,
-  calculateRepeatCompanies,
-  calculateSequentialFunnel,
-  calculateStageDurations,
-  calculateFunnelVelocity,
-  calculateWeeklyConversionTrend,
-  calculateConversionHeatmap,
-  calculateStageBreakdownByGroup,
-  calculateConversionBySalaryRange,
-  calculateOfferForecast,
-  calculateVacancyWordFrequency,
-  calculateHealthIndex,
-} from '@job-search-tracker/shared';
-import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics';
-import { useStages } from '../../lib/hooks/useStages';
-import { SkeletonCard } from '../../components/Skeleton';
-import { HourlyChart } from '../../components/HourlyChart';
-import { WeekdayChart } from '../../components/WeekdayChart';
-import { WeeklyTrendChart } from '../../components/WeeklyTrendChart';
-import { ConversionHeatmap } from '../../components/ConversionHeatmap';
-import { Modal } from '../../components/Modal';
-import { TriangleAlert, Settings, Lightbulb } from 'lucide-react';
+import { useApplicationAnalytics } from '@/lib/hooks/useApplicationAnalytics';
+import SourceAnalytics from '@/components/SourceAnalytics';
+import ConversionHeatmap from '@/components/FunnelHeatmap';
+import WeekdayChart from '@/components/WeekdayChart';
+import Recommendations from '@/components/Recommendations';
 
-const SECTION_IDS = [
-  'healthIndex',
-  'funnel',
-  'sequentialFunnel',
-  'avgResponse',
-  'velocity',
-  'stageDurations',
-  'weeklyTrend',
-  'byHour',
-  'byWeekday',
-  'heatmap',
-  'bySource',
-  'byResume',
-  'bySalary',
+/**
+ * Главный дашборд аналитики откликов
+ */
+export default function AnalyticsPage() {
+  const applications = useApplicationAnalytics();
+
+  // TODO: Реализовать загрузку данных из Supabase
+  
+  return (
+    <div className="space-y-6 p-4 max-w-7xl mx-auto">
+      {/* Шапка */}
+      <header className="bg-white border rounded-lg p-4 shadow-sm">
+        <h1 className="text-xl font-bold text-gray-800">📊 Аналитика откликов</h1>
+        <p className="text-sm text-gray-600 mt-2">{applications.applications.length} откликов</p>
+      </header>
+
+      {/* Статистика */}
+      <section className="grid grid-cols-2 gap-4">
+        <div className="bg-orange-50 p-4 rounded-lg border-2 border-orange-100">
+          <h3 className="text-sm font-medium text-gray-700">Всего откликов</h3>
+          <p className="text-2xl font-bold">{applications.applications.length}</p>
+        </div>
+
+        {/* TODO: Добавить воронку конверсии, когда будут данные */}
+      </section>
+
+      {/* Рекомендации */}
+      <Recommendations />
+
+      {/* Тепловая карта воронки */}
+      <ConversionHeatmap />
+
+      {/* График по дням недели */}
+      <WeekdayChart data={[]} />
+
+      {/* TODO: График по времени суток, SourceAnalytics и др. */}
+    </div>
+  );
+}
   'forecast',
   'silent',
   'repeat',
