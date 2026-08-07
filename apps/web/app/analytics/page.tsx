@@ -84,7 +84,7 @@ function useVisibleSections() {
     try {
       const saved = window.localStorage.getItem(SECTIONS_STORAGE_KEY);
       if (saved) setVisible((prev) => ({ ...prev, ...JSON.parse(saved) }));
-    } catch {}
+    } catch { /* Игнорируем ошибки сохранения */ }
   }, []);
 
   function toggle(id: SectionId) {
@@ -92,8 +92,8 @@ function useVisibleSections() {
       const next = { ...prev, [id]: !prev[id] };
       try {
         window.localStorage.setItem(SECTIONS_STORAGE_KEY, JSON.stringify(next));
-      } catch {}
-      return next;
+        } catch { /* Игнорируем ошибки сохранения */ }
+        return next;
     });
   }
 

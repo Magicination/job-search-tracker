@@ -48,7 +48,7 @@ export function useHeaderStats(stages: Stage[]): { counts: HeaderStageCounts; lo
     return () => {
       channel.unsubscribe();
     };
-  }, [user, fetchAll]);
+  }, [user, fetchAll, channelSuffix]);
 
   return { counts: calculateHeaderStageCounts(applications as Application[], stages), loading };
 }

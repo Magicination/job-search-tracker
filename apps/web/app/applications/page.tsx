@@ -48,10 +48,10 @@ export default function ApplicationsPage() {
    * работали независимо от точного текста в каждом отдельном отклике.
    */
   async function handleUpdate(id: string, field: string, value: any, debounceMs?: number) {
-    updateField(id, field as any, value, debounceMs);
+    updateField(id, field as string, value, debounceMs);
     if (field === 'company' && typeof value === 'string' && value.trim()) {
       const companyId = await findOrCreateCompany(value);
-      if (companyId) updateField(id, 'company_id' as any, companyId, 0);
+      if (companyId) updateField(id, 'company_id' as number, companyId, 0);
     }
   }
 
@@ -65,6 +65,7 @@ export default function ApplicationsPage() {
 
   const [autoOpenId, setAutoOpenId] = useState<string | null>(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement;
@@ -76,8 +77,7 @@ export default function ApplicationsPage() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleAddEmpty() {
     const newId = await addApplication();
