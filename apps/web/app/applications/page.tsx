@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import type { Application } from '@job-search-tracker/shared';
 import { useStages } from '../../lib/hooks/useStages';
 import { useApplications } from '../../lib/hooks/useApplications';
 import { useResumeVersions } from '../../lib/hooks/useResumeVersions';
@@ -47,11 +48,11 @@ export default function ApplicationsPage() {
    * привязываем company_id, чтобы группировка в архиве и рейтинг компании
    * работали независимо от точного текста в каждом отдельном отклике.
    */
-  async function handleUpdate(id: string, field: string, value: any, debounceMs?: number) {
-    updateField(id, field as string, value, debounceMs);
+  async function handleUpdate(id: string, field: keyof Application, value: any, debounceMs?: number) {
+    updateField(id, field, value, debounceMs);
     if (field === 'company' && typeof value === 'string' && value.trim()) {
       const companyId = await findOrCreateCompany(value);
-      if (companyId) updateField(id, 'company_id' as number, companyId, 0);
+      if (companyId) updateField(id, 'id' as keyof Application, companyId, 0);
     }
   }
 
