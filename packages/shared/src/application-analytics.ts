@@ -319,30 +319,6 @@ export function calculateConversionByDayOfWeek(
   );
 }
 
-/**
- * Конверсия по часу отклика (0–23, локальное время устройства на момент
- * подачи). Возвращает все 24 часа, даже если откликов в какой-то час не
- * было (total=0) — это нужно, чтобы UI мог нарисовать полный график 00–24,
- * а не только часы, где что-то произошло.
- */
-export function calculateConversionByHour(
-  applications: Application[],
-  history: ApplicationStatusHistoryEntry[],
-  stages: Stage[]
-): GroupedConversion[] {
-  const grouped = buildGroupedConversion(applications, history, stages, (app) =>
-    app.applied_at ? String(new Date(app.applied_at).getHours()).padStart(2, '0') : null
-  );
-
-  const byHour = new Map(grouped.map((g) => [g.label, g]));
-  const allHours: GroupedConversion[] = [];
-  for (let h = 0; h < 24; h++) {
-    const label = String(h).padStart(2, '0');
-    allHours.push(byHour.get(label) ?? { label, total: 0, reachedInterviewOrBetter: 0, conversionRate: 0 });
-  }
-  return allHours;
-}
-
 /** Конверсия по источнику отклика (hh.ru, LinkedIn и т.д.). Пустой source пропускается. */
 export function calculateConversionBySource(
   applications: Application[],
@@ -555,40 +531,6 @@ function getIsoWeekKey(dateStr: string): string {
   return `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
 }
 
-export interface WeeklyTrendPoint {
-  weekLabel: string;
-  total: number;
-  conversionRate: number;
-}
-
-/** Динамика конверсии по неделям — растёт или падает эффективность со временем, не только срез "за весь период". */
-export function calculateWeeklyConversionTrend(
-  applications: Application[],
-  history: ApplicationStatusHistoryEntry[],
-  stages: Stage[]
-): WeeklyTrendPoint[] {
-  const goodStageIds = getGoodStageIds(stages);
-  const reachedSetByApplication = buildReachedSetByApplication(history);
-
-  const buckets = new Map<string, { total: number; reached: number }>();
-  for (const app of applications) {
-    if (!app.applied_date) continue;
-    const key = getIsoWeekKey(app.applied_date);
-    const bucket = buckets.get(key) ?? { total: 0, reached: 0 };
-    bucket.total += 1;
-    if (reachedGenuineProgress(app, reachedSetByApplication.get(app.id), goodStageIds)) bucket.reached += 1;
-    buckets.set(key, bucket);
-  }
-
-  return Array.from(buckets.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([weekLabel, { total, reached }]) => ({
-      weekLabel,
-      total,
-      conversionRate: total === 0 ? 0 : Math.round((reached / total) * 100),
-    }));
-}
-
 export interface HeatmapCell {
   day: string;
   hour: string;
@@ -597,44 +539,6 @@ export interface HeatmapCell {
 }
 
 const HEATMAP_DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const;
-
-/** Сетка день недели × час отклика — объединяет то, что раньше было двумя отдельными графиками, в одну картину. */
-export function calculateConversionHeatmap(
-  applications: Application[],
-  history: ApplicationStatusHistoryEntry[],
-  stages: Stage[]
-): HeatmapCell[] {
-  const goodStageIds = getGoodStageIds(stages);
-  const reachedSetByApplication = buildReachedSetByApplication(history);
-
-  const cells = new Map<string, { total: number; reached: number }>();
-  for (const app of applications) {
-    if (!app.applied_at) continue;
-    const date = new Date(app.applied_at);
-    const day = HEATMAP_DAY_LABELS[(date.getDay() + 6) % 7];
-    const hour = String(date.getHours()).padStart(2, '0');
-    const key = `${day}|${hour}`;
-    const cell = cells.get(key) ?? { total: 0, reached: 0 };
-    cell.total += 1;
-    if (reachedGenuineProgress(app, reachedSetByApplication.get(app.id), goodStageIds)) cell.reached += 1;
-    cells.set(key, cell);
-  }
-
-  const result: HeatmapCell[] = [];
-  for (const day of HEATMAP_DAY_LABELS) {
-    for (let h = 0; h < 24; h++) {
-      const hour = String(h).padStart(2, '0');
-      const cell = cells.get(`${day}|${hour}`) ?? { total: 0, reached: 0 };
-      result.push({
-        day,
-        hour,
-        total: cell.total,
-        conversionRate: cell.total === 0 ? 0 : Math.round((cell.reached / cell.total) * 100),
-      });
-    }
-  }
-  return result;
-}
 
 export interface StageBreakdownGroup {
   label: string;
@@ -726,27 +630,6 @@ export interface OfferForecast {
   estimatedApplicationsNeeded: number | null;
 }
 
-/** При текущей конверсии до финального этапа — сколько в среднем откликов нужно на один такой результат. */
-export function calculateOfferForecast(
-  applications: Application[],
-  history: ApplicationStatusHistoryEntry[],
-  stages: Stage[]
-): OfferForecast | null {
-  const pathStages = getPathStages(stages);
-  const target = pathStages[pathStages.length - 1];
-  if (!target || applications.length === 0) return null;
-
-  const funnelHistory = calculateFunnelFromHistory(history, stages);
-  const reachedTarget = funnelHistory[target.id] ?? 0;
-  const probability = reachedTarget / applications.length;
-
-  return {
-    targetStageName: target.name,
-    probabilityPercent: Math.round(probability * 100),
-    estimatedApplicationsNeeded: probability > 0 ? Math.ceil(1 / probability) : null,
-  };
-}
-
 const RU_STOP_WORDS = new Set([
   'и', 'в', 'во', 'на', 'с', 'со', 'по', 'для', 'от', 'до', 'из', 'за', 'о', 'об', 'к', 'ко', 'у', 'а', 'но', 'или',
   'что', 'как', 'это', 'этот', 'эта', 'эти', 'то', 'вы', 'мы', 'он', 'она', 'они', 'вас', 'нас', 'их', 'его', 'её',
@@ -767,100 +650,7 @@ export interface WordFrequencyEntry {
   liftScore: number;
 }
 
-/**
- * Частотность слов в текстах вакансий — какие слова/навыки непропорционально
- * часто встречаются у откликов, где был реальный прогресс (интервью/оффер),
- * по сравнению со средней частотой по всем вакансиям. Требует, чтобы текст
- * описания реально сохранился (vacancy_description) — букмарклет пробует
- * его вытащить, но получается не всегда (например, если открыть страницу
- * не через букмарклет, а вручную ввести отклик).
- */
-export function calculateVacancyWordFrequency(
-  applications: Application[],
-  history: ApplicationStatusHistoryEntry[],
-  stages: Stage[],
-  minOccurrences = 3
-): WordFrequencyEntry[] {
-  const goodStageIds = getGoodStageIds(stages);
-  const reachedSetByApplication = buildReachedSetByApplication(history);
-
-  const withDescription = applications.filter((a) => a.vacancy_description && a.vacancy_description.trim());
-  if (withDescription.length < 5) return []; // недостаточно описаний, чтобы делать выводы
-
-  let goodDocs = 0;
-  const countAll = new Map<string, number>();
-  const countGood = new Map<string, number>();
-
-  for (const app of withDescription) {
-    const isGood = reachedGenuineProgress(app, reachedSetByApplication.get(app.id), goodStageIds);
-    if (isGood) goodDocs += 1;
-
-    const uniqueWords = new Set(
-      tokenizeVacancyText(app.vacancy_description as string).filter((w) => !RU_STOP_WORDS.has(w))
-    );
-    for (const word of uniqueWords) {
-      countAll.set(word, (countAll.get(word) ?? 0) + 1);
-      if (isGood) countGood.set(word, (countGood.get(word) ?? 0) + 1);
-    }
-  }
-
-  if (goodDocs === 0) return [];
-
-  const totalDocs = withDescription.length;
-  const results: WordFrequencyEntry[] = [];
-
-  for (const [word, total] of countAll) {
-    if (total < minOccurrences) continue;
-    const good = countGood.get(word) ?? 0;
-    const rateInGood = good / goodDocs;
-    const rateOverall = total / totalDocs;
-    const liftScore = rateOverall > 0 ? Math.round((rateInGood / rateOverall) * 100) / 100 : 0;
-    results.push({ word, countInGood: good, countTotal: total, liftScore });
-  }
-
-  return results.sort((a, b) => b.liftScore - a.liftScore).slice(0, 20);
-}
-
 export interface HealthIndexResult {
   score: number;
   components: { label: string; value: number }[];
-}
-
-/**
- * Один составной показатель 0–100 — свод из трёх компонентов, каждый
- * виден отдельно рядом (не "чёрный ящик"): доля откликов с любым движением,
- * доля с реальным прогрессом, и грубая оценка скорости первого ответа
- * (эвристика: чем быстрее в среднем отвечают, тем выше балл — условная
- * шкала, не научный стандарт, просто ориентир "лучше/хуже, чем было").
- */
-export function calculateHealthIndex(
-  applications: Application[],
-  history: ApplicationStatusHistoryEntry[],
-  stages: Stage[]
-): HealthIndexResult | null {
-  if (applications.length === 0) return null;
-
-  const funnel = calculateConversionFunnel(applications, stages);
-  const goodStageIds = getGoodStageIds(stages);
-  const reachedSetByApplication = buildReachedSetByApplication(history);
-
-  let genuineCount = 0;
-  for (const app of applications) {
-    if (reachedGenuineProgress(app, reachedSetByApplication.get(app.id), goodStageIds)) genuineCount += 1;
-  }
-  const genuineRate = Math.round((genuineCount / applications.length) * 100);
-
-  const avgDays = calculateAverageDaysToFirstResponse(history);
-  const timeScore = avgDays === null ? 50 : Math.max(0, Math.min(100, Math.round(100 - avgDays * 5)));
-
-  const score = Math.round(funnel.responseRate * 0.4 + genuineRate * 0.4 + timeScore * 0.2);
-
-  return {
-    score,
-    components: [
-      { label: 'Доля откликов с любым движением', value: funnel.responseRate },
-      { label: 'Доля с реальным прогрессом', value: genuineRate },
-      { label: 'Скорость первого ответа (условная шкала)', value: timeScore },
-    ],
-  };
 }
