@@ -9,69 +9,46 @@ import {
   calculateAverageDaysToFirstResponse,
   calculateMedianDaysToFirstResponse,
   calculateConversionByDayOfWeek,
-  calculateConversionByHour,
   calculateConversionBySource,
   calculateSilentCompanies,
   calculateRepeatCompanies,
   calculateSequentialFunnel,
   calculateStageDurations,
   calculateFunnelVelocity,
-  calculateWeeklyConversionTrend,
-  calculateConversionHeatmap,
   calculateStageBreakdownByGroup,
   calculateConversionBySalaryRange,
-  calculateOfferForecast,
-  calculateVacancyWordFrequency,
-  calculateHealthIndex,
 } from '@job-search-tracker/shared';
 import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics';
 import { useStages } from '../../lib/hooks/useStages';
 import { SkeletonCard } from '../../components/Skeleton';
-import { HourlyChart } from '../../components/HourlyChart';
 import { WeekdayChart } from '../../components/WeekdayChart';
-import { WeeklyTrendChart } from '../../components/WeeklyTrendChart';
-import { ConversionHeatmap } from '../../components/ConversionHeatmap';
-import { Modal } from '../../components/Modal';
-import { TriangleAlert, Settings, Lightbulb } from 'lucide-react';
 
 const SECTION_IDS = [
-  'healthIndex',
   'funnel',
   'sequentialFunnel',
   'avgResponse',
   'velocity',
   'stageDurations',
-  'weeklyTrend',
-  'byHour',
   'byWeekday',
-  'heatmap',
   'bySource',
   'byResume',
   'bySalary',
-  'forecast',
   'silent',
   'repeat',
-  'wordFrequency',
 ] as const;
 type SectionId = (typeof SECTION_IDS)[number];
 const SECTION_LABELS: Record<SectionId, string> = {
-  healthIndex: 'Индекс здоровья поиска',
   funnel: 'Воронка конверсии (всего)',
   sequentialFunnel: 'Воронка по шагам (drop-off)',
   avgResponse: 'Время до первого ответа',
   velocity: 'Скорость всей воронки',
   stageDurations: 'Время на каждом этапе',
-  weeklyTrend: 'Тренд конверсии по неделям',
-  byHour: 'По часу отклика',
   byWeekday: 'По дню недели',
-  heatmap: 'Тепловая карта день × час',
   bySource: 'По источнику',
   byResume: 'По версии резюме',
   bySalary: 'По зарплатной вилке',
-  forecast: 'Прогноз до оффера',
   silent: 'Тишина по компаниям',
   repeat: 'Повторные отклики',
-  wordFrequency: 'Слова в вакансиях',
 };
 const SECTIONS_STORAGE_KEY = 'jt_analytics_visible_sections_v2';
 
@@ -259,7 +236,6 @@ export default function AnalyticsPage() {
   const avgDays = calculateAverageDaysToFirstResponse(periodHistory);
   const medianDays = calculateMedianDaysToFirstResponse(periodHistory);
   const byDayOfWeek = calculateConversionByDayOfWeek(periodApplications, periodHistory, stages);
-  const byHour = calculateConversionByHour(periodApplications, periodHistory, stages);
   const bySource = calculateConversionBySource(periodApplications, periodHistory, stages);
   const bySalary = calculateConversionBySalaryRange(periodApplications, periodHistory, stages);
 
@@ -272,11 +248,7 @@ export default function AnalyticsPage() {
   const sequentialFunnel = calculateSequentialFunnel(periodHistory, stages);
   const stageDurations = calculateStageDurations(periodHistory, stages);
   const velocity = calculateFunnelVelocity(periodHistory, stages);
-  const weeklyTrend = calculateWeeklyConversionTrend(periodApplications, periodHistory, stages);
-  const heatmap = calculateConversionHeatmap(periodApplications, periodHistory, stages);
-  const forecast = calculateOfferForecast(periodApplications, periodHistory, stages);
-  const wordFrequency = calculateVacancyWordFrequency(periodApplications, periodHistory, stages);
-  const healthIndex = calculateHealthIndex(periodApplications, periodHistory, stages);
+  const byWeekday = calculateConversionByWeekday(periodApplications, periodHistory, stages);
 
   const bySourceBreakdown = calculateStageBreakdownByGroup(periodApplications, periodHistory, stages, (app) =>
     app.source.trim() ? app.source.trim() : null
@@ -349,22 +321,6 @@ export default function AnalyticsPage() {
       )}
       {periodApplications.length === 0 && (
         <p className="text-sm text-text-dim">За выбранный период откликов нет — выберите другой период или «Всё время».</p>
-      )}
-
-      {visible.healthIndex && healthIndex && (
-        <CollapsibleSection title="Индекс здоровья поиска" subtitle="Сводный ориентир 0–100 из трёх компонентов ниже — не строгая наука, просто чтобы видеть «лучше или хуже, чем было»">
-          <div className="flex items-center gap-4">
-            <p className="text-3xl font-semibold tabular-nums text-text">{healthIndex.score}</p>
-            <div className="flex-1 space-y-1.5">
-              {healthIndex.components.map((c) => (
-                <div key={c.label} className="flex items-center justify-between text-xs text-text-faint">
-                  <span>{c.label}</span>
-                  <span className="tabular-nums">{c.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CollapsibleSection>
       )}
 
       {visible.funnel && (
@@ -473,18 +429,6 @@ export default function AnalyticsPage() {
         </CollapsibleSection>
       )}
 
-      {visible.weeklyTrend && (
-        <CollapsibleSection title="Тренд конверсии по неделям" subtitle="Растёт или падает эффективность со временем — последние 12 недель">
-          <WeeklyTrendChart data={weeklyTrend} />
-        </CollapsibleSection>
-      )}
-
-      {visible.byHour && (
-        <CollapsibleSection title="По часу отклика (00–24)" subtitle="Когда вы чаще откликаетесь и насколько это работает">
-          <HourlyChart data={byHour} />
-        </CollapsibleSection>
-      )}
-
       <div className="grid gap-3 sm:grid-cols-1">
         {visible.byWeekday && (
           <CollapsibleSection title="По дню недели отклика">
@@ -493,12 +437,6 @@ export default function AnalyticsPage() {
             ) : (
               <p className="text-xs text-text-faint">Нет данных — у старых откликов не сохранено точное время отправки.</p>
             )}
-          </CollapsibleSection>
-        )}
-
-        {visible.heatmap && (
-          <CollapsibleSection title="Тепловая карта день × час" subtitle="Объединяет два графика выше в одну картину">
-            <ConversionHeatmap data={heatmap} />
           </CollapsibleSection>
         )}
 
@@ -540,19 +478,6 @@ export default function AnalyticsPage() {
             </CollapsibleSection>
           )}
 
-          {visible.forecast && forecast && (
-            <CollapsibleSection title="Прогноз до оффера" subtitle={`При текущей конверсии до этапа «${forecast.targetStageName}»`}>
-              <p className="text-2xl font-semibold tabular-nums text-text">
-                {forecast.estimatedApplicationsNeeded !== null ? `~${forecast.estimatedApplicationsNeeded} откликов` : '—'}
-              </p>
-              <p className="mt-1 text-xs text-text-faint">
-                {forecast.estimatedApplicationsNeeded !== null
-                  ? `в среднем на один такой результат, при текущей конверсии ${forecast.probabilityPercent}%`
-                  : 'пока ни разу не дошли до этого этапа — рано считать прогноз'}
-              </p>
-            </CollapsibleSection>
-          )}
-
           {visible.silent && (
             <CollapsibleSection title="Тишина по компаниям" subtitle="Ни разу не ответили за 14+ дней">
               {silentCompanies.length === 0 ? (
@@ -580,28 +505,6 @@ export default function AnalyticsPage() {
                     <div key={r.company} className="flex items-center justify-between text-sm">
                       <span className="text-text-dim">{r.company}</span>
                       <span className="tabular-nums text-text-faint">{r.count} раза</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CollapsibleSection>
-          )}
-
-          {visible.wordFrequency && (
-            <CollapsibleSection title="Слова в вакансиях" subtitle="Слова, непропорционально частые в описаниях с реальным прогрессом — требует, чтобы текст вакансии сохранился (букмарклет пробует, но не всегда получается)">
-              {wordFrequency.length === 0 ? (
-                <p className="text-xs text-text-faint">
-                  Пока недостаточно сохранённых описаний вакансий для анализа — добавляйте отклики через
-                  букмарклет, он старается сохранить текст вакансии автоматически.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-1.5">
-                  {wordFrequency.map((w) => (
-                    <div key={w.word} className="flex items-center justify-between text-sm">
-                      <span className="text-text-dim">{w.word}</span>
-                      <span className="tabular-nums text-text-faint">
-                        ×{w.liftScore} ({w.countInGood}/{w.countTotal})
-                      </span>
                     </div>
                   ))}
                 </div>
