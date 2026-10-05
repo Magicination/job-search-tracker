@@ -22,7 +22,7 @@ import { useApplicationAnalytics } from '../../lib/hooks/useApplicationAnalytics
 import { useStages } from '../../lib/hooks/useStages';
 import { SkeletonCard } from '../../components/Skeleton';
 import { WeekdayChart } from '../../components/WeekdayChart';
-import { TriangleAlert } from 'lucide-react';
+import { TriangleAlert, Lightbulb } from 'lucide-react';
 
 const SECTION_IDS = [
   'funnel',
