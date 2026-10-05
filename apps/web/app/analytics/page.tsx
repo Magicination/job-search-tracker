@@ -249,7 +249,7 @@ export default function AnalyticsPage() {
   const sequentialFunnel = calculateSequentialFunnel(periodHistory, stages);
   const stageDurations = calculateStageDurations(periodHistory, stages);
   const velocity = calculateFunnelVelocity(periodHistory, stages);
-  const byWeekday = calculateConversionByWeekday(periodApplications, periodHistory, stages);
+  const byWeekday = calculateConversionByDayOfWeek(periodApplications, periodHistory, stages);
 
   const bySourceBreakdown = calculateStageBreakdownByGroup(periodApplications, periodHistory, stages, (app) =>
     app.source.trim() ? app.source.trim() : null
