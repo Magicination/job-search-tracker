@@ -9,7 +9,6 @@ export default function AnalyticsPage() {
     </div>
   );
 }
-  const { applications, history, resumeVersions, loading } = useApplicationAnalytics();
   const { stages, loading: stagesLoading } = useStages();
   const { visible, toggle } = useVisibleSections();
   const [settingsOpen, setSettingsOpen] = useState(false);

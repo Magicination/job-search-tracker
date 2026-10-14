@@ -9,7 +9,6 @@ export default function CompaniesPage() {
     </div>
   );
 }
-  const { companies, loading, updateCompany } = useCompanies();
   
   const [searchQuery, setSearchQuery] = useState('');
   const companiesList = useMemo(() => {
