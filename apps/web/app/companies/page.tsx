@@ -1,11 +1,14 @@
-'use client';
-
-import { useState, useMemo } from 'react';
-import Link from 'next/link';
-import { useCompanies } from '../../lib/hooks/useCompanies';
-import { Building2, FileText } from 'lucide-react';
-
+// Экран компаний удалён по запросу пользователя
 export default function CompaniesPage() {
+  return (
+    <div className="min-h-screen p-8 flex items-center justify-center">
+      <div className="text-center text-text-dim">
+        <p>Экран компаний удалён</p>
+        <p className="text-sm mt-2">Используйте страницу «Отклики» для просмотра компаний</p>
+      </div>
+    </div>
+  );
+}
   const { companies, loading, updateCompany } = useCompanies();
   
   const [searchQuery, setSearchQuery] = useState('');

@@ -1,26 +1,11 @@
-'use client';
-
-import { useResumeVersions } from '../../lib/hooks/useResumeVersions';
-import { DocumentVersionsPanel } from '../../components/DocumentVersionsPanel';
-
+// Экран резюме удалён по запросу пользователя
 export default function ResumesPage() {
-  const { versions, addVersion, deleteVersion } = useResumeVersions();
-
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-lg font-semibold text-text">Резюме</h1>
-      <p className="text-sm text-text-dim">
-        Разные версии резюме под разные вакансии — привязываются к отклику на странице «Отклики», а конверсия
-        по версиям видна на странице «Аналитика».
-      </p>
-      <DocumentVersionsPanel
-        title="Версии резюме"
-        emptyHint="Создайте версию, если планируете тестировать разные варианты резюме — потом на странице «Аналитика» будет видно, какая версия даёт лучшую конверсию."
-        versions={versions}
-        onAdd={addVersion}
-        onDelete={deleteVersion}
-        defaultOpen
-      />
+    <div className="min-h-screen p-8 flex items-center justify-center">
+      <div className="text-center text-text-dim">
+        <p>Экран резюме удалён</p>
+        <p className="text-sm mt-2">Версии резюме привязываются к откликам на странице «Отклики»</p>
+      </div>
     </div>
   );
 }
