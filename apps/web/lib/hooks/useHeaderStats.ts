@@ -6,9 +6,20 @@
 // а не по фиксированным полям.
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { calculateHeaderStageCounts, type HeaderStageCounts, type Application, type Stage } from '@job-search-tracker/shared';
+import type { Application, Stage } from '@job-search-tracker/shared';
 import { supabase } from '../supabase';
 import { useAuth } from './useAuth';
+
+type HeaderStageCounts = Record<string, number>;
+
+function calculateHeaderStageCounts(applications: Application[], stages: Stage[]): HeaderStageCounts {
+  const counts: HeaderStageCounts = {};
+  for (const stage of stages) counts[stage.id] = 0;
+  for (const app of applications) {
+    if (app.stage_id in counts) counts[app.stage_id] += 1;
+  }
+  return counts;
+}
 
 export function useHeaderStats(stages: Stage[]): { counts: HeaderStageCounts; loading: boolean } {
   const { user } = useAuth();
