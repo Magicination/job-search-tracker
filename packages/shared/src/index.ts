@@ -7,4 +7,3 @@ export * from './design-tokens';
 export * from './seeds';
 export * from './resources';
 export * from './ensure-default-tasks';
-export * from './application-analytics';
