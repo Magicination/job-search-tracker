@@ -9,8 +9,6 @@ export default function CompaniesPage() {
     </div>
   );
 }
-  
-  const [searchQuery, setSearchQuery] = useState('');
   const companiesList = useMemo(() => {
     if (!companies.length) return [];
     return companies.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
