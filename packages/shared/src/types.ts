@@ -169,3 +169,9 @@ export interface HeatmapCell {
   total: number;
   conversionRate: number;
 }
+
+export interface WeeklyTrendPoint {
+  weekLabel: string; // ISO week date format YYYY-Www
+  total: number;
+  conversionRate: number;
+}
