@@ -162,3 +162,10 @@ export interface NotebookEntry {
   is_shared: boolean;
   created_at: string;
 }
+
+export interface HeatmapCell {
+  day: string; // YYYY-MM-DD
+  hour: string; // HH (00-23)
+  total: number;
+  conversionRate: number;
+}
