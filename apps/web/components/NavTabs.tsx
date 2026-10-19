@@ -6,6 +6,7 @@ import { useAuth } from '../lib/hooks/useAuth';
 
 const TABS = [
   { href: '/applications', label: 'Отклики' },
+  { href: '/dashboard', label: 'Дашборд' },
 ] as const;
 
 export function NavTabs() {
