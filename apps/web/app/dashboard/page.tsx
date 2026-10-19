@@ -99,7 +99,7 @@ export default function DashboardPage() {
     const stage = stages.find((s) => s.id === stageId);
     if (!stage) return null;
     return (
-      <Badge label={stage.name} variant={stage.color} size="sm" />
+      <Badge label={stage.name} variant={stage.color} />
     );
   };
 
